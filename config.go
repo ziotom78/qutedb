@@ -50,6 +50,8 @@ type Configuration struct {
 	WriteTimeout int64
 
 	StaticPath string
+
+	RepositoryPath string
 }
 
 // configureViper sets up the Viper library so that it can read the
@@ -63,6 +65,7 @@ func configureViper() {
 	viper.SetDefault("port_number", 8080)
 	viper.SetDefault("server_name", "127.0.0.1")
 	viper.SetDefault("static_path", "static")
+	viper.SetDefault("repository_path", ".")
 	viper.SetDefault("read_timeout", 15)
 	viper.SetDefault("write_timeout", 60)
 
@@ -103,6 +106,7 @@ func createConfiguration() *Configuration {
 		PortNumber:            viper.GetInt("port_number"),
 		ReadTimeout:           viper.GetInt64("read_timeout"),
 		WriteTimeout:          viper.GetInt64("write_timeout"),
+		RepositoryPath:        viper.GetString("repository_path"),
 		ServerName:            viper.GetString("server_name"),
 		StaticPath:            viper.GetString("static_path"),
 	}

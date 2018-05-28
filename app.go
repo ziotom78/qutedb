@@ -25,11 +25,11 @@ THE SOFTWARE.
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"runtime"
 
+	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,13 +37,13 @@ import (
 // An App is a structure which encapsulate the whole state of the application
 type App struct {
 	config *Configuration
-	db     *sql.DB
+	db     *gorm.DB
 }
 
 var app *App
 
-// initApp perform a number of initializations on the global "app" object.
-func initApp() {
+// InitApp perform a number of initializations on the global "app" object.
+func InitApp() {
 	config := createConfiguration()
 
 	// Before calling configureLogging, we need to initialize the output file in
@@ -84,13 +84,13 @@ func initApp() {
 	}
 }
 
-// runApp opens the database and starts the main loop (implemented through the
+// RunApp opens the database and starts the main loop (implemented through the
 // function mainEventLoop)
-func runApp() {
+func RunApp() {
 	log.WithFields(log.Fields{
 		"database_file": app.config.DatabaseFile,
 	}).Info("Going to establish a connection to database")
-	db, err := sql.Open("sqlite3", app.config.DatabaseFile)
+	db, err := gorm.Open("sqlite3", app.config.DatabaseFile)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"database_file": app.config.DatabaseFile,
@@ -99,7 +99,11 @@ func runApp() {
 	}
 	defer db.Close()
 
+	if err := InitDb(db, app.config); err != nil {
+		panic(fmt.Sprintf("Unable to initialize the database: %s", err))
+	}
 	app.db = db
+
 	log.WithFields(log.Fields{
 		"server":      app.config.ServerName,
 		"port_number": app.config.PortNumber,

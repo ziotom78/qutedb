@@ -58,6 +58,6 @@ func configureLogging(config *Configuration) {
 }
 
 func main() {
-	initApp()
-	runApp()
+	InitApp()
+	RunApp()
 }
