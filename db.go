@@ -53,11 +53,18 @@ type Session struct {
 	UserID uint
 }
 
-// An AsicDataFile represents the file containing either raw or sum data
-// acquired with one ASIC
-type AsicDataFile struct {
-	ID       int `gorm:"primary_key"`
-	FileName string
+// A RawDataFile represents the file containing raw data acquired with one ASIC
+type RawDataFile struct {
+	ID            int `gorm:"primary_key"`
+	FileName      string
+	AcquisitionID int
+}
+
+// A SumDataFile represents the file containing science data acquired with one ASIC
+type SumDataFile struct {
+	ID            int `gorm:"primary_key"`
+	FileName      string
+	AcquisitionID int
 }
 
 // An Acquisition represents a set of files within a folder in the repository
@@ -66,8 +73,8 @@ type Acquisition struct {
 
 	Directoryname      string `gorm:"unique_index"`
 	CreationTime       time.Time
-	RawFiles           []AsicDataFile
-	SumFiles           []AsicDataFile
+	RawFiles           []RawDataFile
+	SumFiles           []SumDataFile
 	AsicHkFileName     string
 	ExternHkFileName   string
 	CryostatHkFileName string
@@ -76,7 +83,13 @@ type Acquisition struct {
 // InitDb creates all the tables in the database. It takes care
 // of not raising errors if the tables are already present.
 func InitDb(db *gorm.DB, config *Configuration) error {
-	db.AutoMigrate(&User{}, &Session{}, &AsicDataFile{}, &Acquisition{})
+	db.AutoMigrate(
+		&User{},
+		&Session{},
+		&RawDataFile{},
+		&SumDataFile{},
+		&Acquisition{},
+	)
 
 	// Clear all existing sessions in the database. Ignore any error
 	db.Delete(&Session{})
@@ -173,17 +186,13 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 
 	if rawFiles, err := findMultipleFiles(RawDirName(folderPath), "raw-asic*-????.??.??.??????.fits"); err == nil && len(rawFiles) > 0 {
 		for _, filename := range rawFiles {
-			datafile := AsicDataFile{FileName: filename}
-			db.Create(&datafile)
-			newacq.RawFiles = append(newacq.RawFiles, datafile)
+			newacq.RawFiles = append(newacq.RawFiles, RawDataFile{FileName: filename})
 		}
 	}
 
 	if sumFiles, err := findMultipleFiles(SumDirName(folderPath), "science-asic*-????.??.??.??????.fits"); err == nil && len(sumFiles) > 0 {
 		for _, filename := range sumFiles {
-			datafile := AsicDataFile{FileName: filename}
-			db.Create(&datafile)
-			newacq.SumFiles = append(newacq.SumFiles, datafile)
+			newacq.SumFiles = append(newacq.SumFiles, SumDataFile{FileName: filename})
 		}
 	}
 

@@ -69,6 +69,14 @@ func TestSession(t *testing.T) {
 	}
 }
 
+type ExpectedDir struct {
+	Name            string
+	NumOfRawFiles   int
+	NumOfSumFiles   int
+	AsicsHkPresent  bool
+	ExternHkPresent bool
+}
+
 func TestRefresh(t *testing.T) {
 	if err := RefreshDbContents(testdb, "testdata"); err != nil {
 		t.Fatalf("Error running RefreshDbContents: %s", err)
@@ -80,16 +88,43 @@ func TestRefresh(t *testing.T) {
 		t.Fatalf("Wrong number of acquisitions: %d", count)
 	}
 
-	expecteddirs := []string{
-		"2018-04-06_14.20.35__testbackups",
-		"2018-05-22_13.33.56__mytest",
-		"2018-05-22_13.38.15__test_backhome",
-		"2018-05-22_15.22.22__test_withGPS",
+	expecteddirs := []ExpectedDir{
+		{Name: "2018-04-06_14.20.35__testbackups", NumOfRawFiles: 1, NumOfSumFiles: 1, AsicsHkPresent: true},
+		{Name: "2018-05-22_13.33.56__mytest", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
+		{Name: "2018-05-22_13.38.15__test_backhome", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
+		{Name: "2018-05-22_15.22.22__test_withGPS", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
 	}
-	for _, name := range expecteddirs {
-		if res := testdb.Where("directoryname = ?", name).First(&Acquisition{}); res.RecordNotFound() {
-			t.Fatalf("Acquisition \"%s\" not found in the database", name)
+	for _, dir := range expecteddirs {
+		var acq Acquisition
+		res := testdb.Where("directoryname = ?", dir.Name).First(&acq)
+		if res.RecordNotFound() {
+			t.Fatalf("Acquisition \"%s\" not found in the database", dir.Name)
 		}
+
+		if res := testdb.Model(&acq).Related(&acq.RawFiles).Error; res != nil {
+			t.Fatalf("Error for acquisition %d (%s): %s", acq.ID, acq.Directoryname, res)
+		}
+		if len(acq.RawFiles) != dir.NumOfRawFiles {
+			t.Fatalf("Wrong number of raw files for \"%s\", it is %d but it should be %d (%v)",
+				dir.Name, len(acq.RawFiles), dir.NumOfRawFiles, acq.RawFiles)
+		}
+
+		if res := testdb.Model(&acq).Related(&acq.SumFiles).Error; res != nil {
+			t.Fatalf("Error for acquisition %d (%s): %s", acq.ID, acq.Directoryname, res)
+		}
+		if len(acq.SumFiles) != dir.NumOfSumFiles {
+			t.Fatalf("Wrong number of science files for \"%s\", it is %d but it should be %d",
+				dir.Name, len(acq.SumFiles), dir.NumOfSumFiles)
+		}
+
+		if dir.AsicsHkPresent && acq.AsicHkFileName == "" {
+			t.Fatalf("ASIC HK file for \"%s\" not found", dir.Name)
+		}
+
+		if dir.ExternHkPresent && acq.ExternHkFileName == "" {
+			t.Fatalf("External HK file for \"%s\" not found", dir.Name)
+		}
+
 	}
 }
 
