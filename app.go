@@ -104,6 +104,14 @@ func RunApp() {
 	}
 	app.db = db
 
+	// Refresh the contents of the database
+	log.WithFields(log.Fields{
+		"repository": app.config.RepositoryPath,
+	}).Info("Refreshing the database")
+	if err := RefreshDbContents(db, app.config.RepositoryPath); err != nil {
+		panic(fmt.Sprintf("Unable to refresh the database: %s", err))
+	}
+
 	log.WithFields(log.Fields{
 		"server":      app.config.ServerName,
 		"port_number": app.config.PortNumber,

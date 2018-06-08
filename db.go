@@ -94,8 +94,7 @@ func InitDb(db *gorm.DB, config *Configuration) error {
 	// Clear all existing sessions in the database. Ignore any error
 	db.Delete(&Session{})
 
-	// Refresh the contents of the database
-	return RefreshDbContents(db, config.RepositoryPath)
+	return db.Error
 }
 
 // HkDirName returns the name of the test directory containing the housekeeping files
@@ -166,10 +165,19 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 
 	// Check for the presence of housekeeping files
 	hkDir := HkDirName(folderPath)
-	if filename, err := findOneMatchingFile(hkDir, "conf-asics-????.??.??.??????.fits"); err == nil && filename != "" {
+	filename, err := findOneMatchingFile(hkDir, "conf-asics-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
 		newacq.AsicHkFileName = filename
 	}
-	if filename, err := findOneMatchingFile(hkDir, "hk-extern-????.??.??.??????.fits"); err == nil && filename != "" {
+
+	filename, err = findOneMatchingFile(hkDir, "hk-extern-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
 		newacq.ExternHkFileName = filename
 	}
 	// TODO: Cryostat thermometers will need to be considered at this point,
@@ -196,7 +204,7 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 }
 
 // RefreshDbContents scans the repository for any file that is missing from the
-// database, and create an entry for each of them
+// database, and create an entry for each of them.
 func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 	folders, err := filepath.Glob(filepath.Join(repositoryPath, "????-??-??_??.??.??__*"))
 	if err != nil {
