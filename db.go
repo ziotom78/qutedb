@@ -36,7 +36,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// An User is somebody which can have access to the site
+// An User is somebody which can have (read-only) access to the data
 type User struct {
 	gorm.Model
 	Email          string `gorm:"unique_index"`
