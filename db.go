@@ -27,6 +27,7 @@ package main
 import (
 	"io/ioutil"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/elithrar/simple-scrypt"
@@ -89,6 +90,24 @@ func SumDirName(repositoryPath string, testFolder string) string {
 	return path.Join(repositoryPath, testFolder, "Sums")
 }
 
+func listFilesInDir(dirpath string) []string {
+	result := []string{}
+
+	files, err := ioutil.ReadDir(dirpath)
+	if err != nil {
+		return result
+	}
+
+	for _, f := range files {
+		if f.IsDir() || strings.ToLower(path.Ext(f.Name())) != ".fits" {
+			continue
+		}
+		result = append(result, f.Name())
+	}
+
+	return result
+}
+
 // RefreshDbContents scans the repository for any file that is missing from the
 // database, and create an entry for each of them
 func RefreshDbContents(db *gorm.DB, config *Configuration) error {
@@ -99,6 +118,10 @@ func RefreshDbContents(db *gorm.DB, config *Configuration) error {
 
 	for _, f := range files {
 		hkDir := HkDirName(config.RepositoryPath, f.Name())
+		listOfHkFiles := listFilesInDir(hkDir)
+		if len(listOfHkFiles) == 0 {
+			break
+		}
 	}
 
 	return nil
