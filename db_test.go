@@ -69,6 +69,30 @@ func TestSession(t *testing.T) {
 	}
 }
 
+func TestRefresh(t *testing.T) {
+	if err := RefreshDbContents(testdb, "testdata"); err != nil {
+		t.Fatalf("Error running RefreshDbContents: %s", err)
+	}
+
+	var count int
+	testdb.Model(&Acquisition{}).Count(&count)
+	if count != 4 {
+		t.Fatalf("Wrong number of acquisitions: %d", count)
+	}
+
+	expecteddirs := []string{
+		"2018-04-06_14.20.35__testbackups",
+		"2018-05-22_13.33.56__mytest",
+		"2018-05-22_13.38.15__test_backhome",
+		"2018-05-22_15.22.22__test_withGPS",
+	}
+	for _, name := range expecteddirs {
+		if res := testdb.Where("directoryname = ?", name).First(&Acquisition{}); res.RecordNotFound() {
+			t.Fatalf("Acquisition \"%s\" not found in the database", name)
+		}
+	}
+}
+
 func TestMain(m *testing.M) {
 	testdb, _ = gorm.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
 	defer testdb.Close()

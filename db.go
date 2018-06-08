@@ -25,8 +25,11 @@ THE SOFTWARE.
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,42 +55,51 @@ type Session struct {
 	UserID uint
 }
 
+// An AsicDataFile represents the file containing either raw or sum data
+// acquired with one ASIC
+type AsicDataFile struct {
+	ID       int `gorm:"primary_key"`
+	FileName string
+}
+
 // An Acquisition represents a set of files within a folder in the repository
 type Acquisition struct {
 	gorm.Model
 
-	Directoryname string `gorm:"unique_index"`
-	CreationTime  time.Time
-	HkFileName    string
-	RawFileName   string
-	SumFileName   string
+	Directoryname      string `gorm:"unique_index"`
+	CreationTime       time.Time
+	RawFiles           []AsicDataFile
+	SumFiles           []AsicDataFile
+	AsicHkFileName     string
+	ExternHkFileName   string
+	CryostatHkFileName string
 }
 
 // InitDb creates all the tables in the database. It takes care
 // of not raising errors if the tables are already present.
 func InitDb(db *gorm.DB, config *Configuration) error {
-	db.AutoMigrate(&User{}, &Session{}, &Acquisition{})
+	db.AutoMigrate(&User{}, &Session{}, &AsicDataFile{}, &Acquisition{})
 
 	// Clear all existing sessions in the database. Ignore any error
 	db.Delete(&Session{})
 
 	// Refresh the contents of the database
-	return RefreshDbContents(db, config)
+	return RefreshDbContents(db, config.RepositoryPath)
 }
 
 // HkDirName returns the name of the test directory containing the housekeeping files
-func HkDirName(repositoryPath string, testFolder string) string {
-	return path.Join(repositoryPath, testFolder, "Hks")
+func HkDirName(folder string) string {
+	return path.Join(folder, "Hks")
 }
 
 // RawDirName returns the name of the test directory containing raw files
-func RawDirName(repositoryPath string, testFolder string) string {
-	return path.Join(repositoryPath, testFolder, "Raws")
+func RawDirName(folder string) string {
+	return path.Join(folder, "Raws")
 }
 
 // SumDirName returns the name of the test directory containing raw files
-func SumDirName(repositoryPath string, testFolder string) string {
-	return path.Join(repositoryPath, testFolder, "Sums")
+func SumDirName(folder string) string {
+	return path.Join(folder, "Sums")
 }
 
 func listFilesInDir(dirpath string) []string {
@@ -108,19 +120,116 @@ func listFilesInDir(dirpath string) []string {
 	return result
 }
 
+func findMultipleFiles(path string, mask string) ([]string, error) {
+	filenames, err := filepath.Glob(filepath.Join(path, mask))
+	if err != nil || len(filenames) == 0 {
+		return []string{}, err
+	}
+
+	result := []string{}
+	for _, curname := range filenames {
+		fi, err := os.Stat(curname)
+		if err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+
+		result = append(result, curname)
+	}
+
+	return result, nil
+}
+
+// findOneMatchingFile looks for the files matching "mask" (a file name pattern
+// built using POSIX wildcards). If no matches are found, it returns "". If one
+// match is found, it returns the name of the file. If more tha one match is
+// found, it returns an error. matching files were found.
+func findOneMatchingFile(path string, mask string) (string, error) {
+	filenames, err := filepath.Glob(filepath.Join(path, mask))
+	if err != nil || len(filenames) == 0 {
+		return "", fmt.Errorf("Error in \"glob\": %s", err)
+	}
+
+	if len(filenames) > 1 {
+		return "", fmt.Errorf("Found more than one file (%d) matching the mask \"%s\"",
+			len(filenames), mask)
+	}
+
+	fi, err := os.Stat(filenames[0])
+	if err != nil {
+		return "", fmt.Errorf("Unable to retrieve information for \"%s\": %s", filenames[0], err)
+	}
+
+	if !fi.Mode().IsRegular() {
+		return "", nil
+	}
+
+	return filenames[0], nil
+}
+
+// refreshFolder scans a folder containing *one* acquisition and updates the
+// database accordingly. This function does not check whether "folderPath" is
+// really within the repository or not.
+func refreshFolder(db *gorm.DB, folderPath string) error {
+	newacq := Acquisition{
+		Directoryname: filepath.Base(folderPath),
+	}
+
+	// Check if the folder is already present in the db
+	result := db.Where("directoryname = ?", newacq.Directoryname).First(&Acquisition{})
+	if !result.RecordNotFound() {
+		return nil
+	}
+
+	// Check for the presence of housekeeping files
+	hkDir := HkDirName(folderPath)
+	if filename, err := findOneMatchingFile(hkDir, "conf-asics-????.??.??.??????.fits"); err == nil && filename != "" {
+		newacq.AsicHkFileName = filename
+	}
+	if filename, err := findOneMatchingFile(hkDir, "hk-extern-????.??.??.??????.fits"); err == nil && filename != "" {
+		newacq.ExternHkFileName = filename
+	}
+	// TODO: Cryostat thermometers will need to be considered at this point,
+	// once the mask for their files is finalized
+
+	if rawFiles, err := findMultipleFiles(RawDirName(folderPath), "raw-asic*-????.??.??.??????.fits"); err == nil && len(rawFiles) > 0 {
+		for _, filename := range rawFiles {
+			datafile := AsicDataFile{FileName: filename}
+			db.Create(&datafile)
+			newacq.RawFiles = append(newacq.RawFiles, datafile)
+		}
+	}
+
+	if sumFiles, err := findMultipleFiles(SumDirName(folderPath), "science-asic*-????.??.??.??????.fits"); err == nil && len(sumFiles) > 0 {
+		for _, filename := range sumFiles {
+			datafile := AsicDataFile{FileName: filename}
+			db.Create(&datafile)
+			newacq.SumFiles = append(newacq.SumFiles, datafile)
+		}
+	}
+
+	if db.Create(&newacq).Error != nil {
+		return fmt.Errorf("Error while creating a new acquisition for \"%s\": %s",
+			folderPath, db.Error)
+	}
+
+	return nil
+}
+
 // RefreshDbContents scans the repository for any file that is missing from the
 // database, and create an entry for each of them
-func RefreshDbContents(db *gorm.DB, config *Configuration) error {
-	files, err := ioutil.ReadDir(config.RepositoryPath)
+func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
+	folders, err := filepath.Glob(filepath.Join(repositoryPath, "????-??-??_??.??.??__*"))
 	if err != nil {
 		return err
 	}
+	for _, curfolder := range folders {
+		if fi, err := os.Stat(curfolder); err != nil || !fi.Mode().IsDir() {
+			// Skip entries that are not real directories
+			continue
+		}
 
-	for _, f := range files {
-		hkDir := HkDirName(config.RepositoryPath, f.Name())
-		listOfHkFiles := listFilesInDir(hkDir)
-		if len(listOfHkFiles) == 0 {
-			break
+		if err := refreshFolder(db, curfolder); err != nil {
+			return err
 		}
 	}
 
