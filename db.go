@@ -26,11 +26,9 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/elithrar/simple-scrypt"
@@ -100,24 +98,6 @@ func RawDirName(folder string) string {
 // SumDirName returns the name of the test directory containing raw files
 func SumDirName(folder string) string {
 	return path.Join(folder, "Sums")
-}
-
-func listFilesInDir(dirpath string) []string {
-	result := []string{}
-
-	files, err := ioutil.ReadDir(dirpath)
-	if err != nil {
-		return result
-	}
-
-	for _, f := range files {
-		if f.IsDir() || strings.ToLower(path.Ext(f.Name())) != ".fits" {
-			continue
-		}
-		result = append(result, f.Name())
-	}
-
-	return result
 }
 
 func findMultipleFiles(path string, mask string) ([]string, error) {
