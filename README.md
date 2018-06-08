@@ -1,6 +1,6 @@
 # QuTeDB — The QUBIC Test Database
 
-[![Build Status](https://travis-ci.org/tcnksm-sample/travis-golang.svg?branch=master)](https://travis-ci.org/tcnksm-sample/travis-golang)
+[![Build Status](https://travis-ci.org/ziotom78/qutedb.svg?branch=master)](https://travis-ci.org/ziotom78/qutedb)
 
 ## Requirements
 
