@@ -1,5 +1,7 @@
 # QuTeDB — The QUBIC Test Database
 
+[![Build Status](https://travis-ci.org/tcnksm-sample/travis-golang.svg?branch=master)](https://travis-ci.org/tcnksm-sample/travis-golang)
+
 ## Requirements
 
 - [Go](https://golang.org) version 1.10 or newer
