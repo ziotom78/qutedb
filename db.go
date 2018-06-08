@@ -115,7 +115,7 @@ func SumDirName(folder string) string {
 
 func findMultipleFiles(path string, mask string) ([]string, error) {
 	filenames, err := filepath.Glob(filepath.Join(path, mask))
-	if err != nil || len(filenames) == 0 {
+	if len(filenames) == 0 {
 		return []string{}, err
 	}
 
@@ -137,23 +137,14 @@ func findMultipleFiles(path string, mask string) ([]string, error) {
 // match is found, it returns the name of the file. If more tha one match is
 // found, it returns an error. matching files were found.
 func findOneMatchingFile(path string, mask string) (string, error) {
-	filenames, err := filepath.Glob(filepath.Join(path, mask))
+	filenames, err := findMultipleFiles(path, mask)
 	if err != nil || len(filenames) == 0 {
-		return "", fmt.Errorf("Error in \"glob\": %s", err)
+		return "", err
 	}
 
 	if len(filenames) > 1 {
 		return "", fmt.Errorf("Found more than one file (%d) matching the mask \"%s\"",
 			len(filenames), mask)
-	}
-
-	fi, err := os.Stat(filenames[0])
-	if err != nil {
-		return "", fmt.Errorf("Unable to retrieve information for \"%s\": %s", filenames[0], err)
-	}
-
-	if !fi.Mode().IsRegular() {
-		return "", nil
 	}
 
 	return filenames[0], nil
