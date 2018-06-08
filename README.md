@@ -1,6 +1,7 @@
 # QuTeDB — The QUBIC Test Database
 
 [![Build Status](https://travis-ci.org/ziotom78/qutedb.svg?branch=master)](https://travis-ci.org/ziotom78/qutedb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Requirements
 
