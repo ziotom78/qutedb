@@ -29,6 +29,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/elithrar/simple-scrypt"
@@ -57,6 +59,7 @@ type Session struct {
 type RawDataFile struct {
 	ID            int `gorm:"primary_key"`
 	FileName      string
+	AsicNumber    int
 	AcquisitionID int
 }
 
@@ -64,6 +67,7 @@ type RawDataFile struct {
 type SumDataFile struct {
 	ID            int `gorm:"primary_key"`
 	FileName      string
+	AsicNumber    int
 	AcquisitionID int
 }
 
@@ -71,6 +75,7 @@ type SumDataFile struct {
 type Acquisition struct {
 	gorm.Model
 
+	Name               string
 	Directoryname      string `gorm:"unique_index"`
 	CreationTime       time.Time
 	RawFiles           []RawDataFile
@@ -153,8 +158,16 @@ func findOneMatchingFile(path string, mask string) (string, error) {
 // database accordingly. This function does not check whether "folderPath" is
 // really within the repository or not.
 func refreshFolder(db *gorm.DB, folderPath string) error {
+	dirname := filepath.Base(folderPath)
+	creationTime, err := time.Parse("2006-01-02_15.04.05", dirname[:19])
+	if err != nil {
+		panic(fmt.Sprintf("Wrong time in string \"%s\"", dirname))
+	}
+
 	newacq := Acquisition{
-		Directoryname: filepath.Base(folderPath),
+		Name:          dirname[21:],
+		Directoryname: dirname,
+		CreationTime:  creationTime,
 	}
 
 	// Check if the folder is already present in the db
@@ -183,15 +196,26 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	// TODO: Cryostat thermometers will need to be considered at this point,
 	// once the mask for their files is finalized
 
+	asicRe := regexp.MustCompile("asic([0-9]+)")
 	if rawFiles, err := findMultipleFiles(RawDirName(folderPath), "raw-asic*-????.??.??.??????.fits"); err == nil && len(rawFiles) > 0 {
 		for _, filename := range rawFiles {
-			newacq.RawFiles = append(newacq.RawFiles, RawDataFile{FileName: filename})
+			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
+			asicNum, err := strconv.Atoi(matches[1])
+			if err != nil {
+				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
+			}
+			newacq.RawFiles = append(newacq.RawFiles, RawDataFile{FileName: filename, AsicNumber: asicNum})
 		}
 	}
 
 	if sumFiles, err := findMultipleFiles(SumDirName(folderPath), "science-asic*-????.??.??.??????.fits"); err == nil && len(sumFiles) > 0 {
 		for _, filename := range sumFiles {
-			newacq.SumFiles = append(newacq.SumFiles, SumDataFile{FileName: filename})
+			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
+			asicNum, err := strconv.Atoi(matches[1])
+			if err != nil {
+				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
+			}
+			newacq.SumFiles = append(newacq.SumFiles, SumDataFile{FileName: filename, AsicNumber: asicNum})
 		}
 	}
 

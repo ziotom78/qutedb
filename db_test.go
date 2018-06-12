@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -73,6 +74,8 @@ func TestSession(t *testing.T) {
 
 type ExpectedDir struct {
 	Name            string
+	DirName         string
+	CreationTime    time.Time
 	NumOfRawFiles   int
 	NumOfSumFiles   int
 	AsicsHkPresent  bool
@@ -91,16 +94,52 @@ func TestRefresh(t *testing.T) {
 	}
 
 	expecteddirs := []ExpectedDir{
-		{Name: "2018-04-06_14.20.35__testbackups", NumOfRawFiles: 1, NumOfSumFiles: 1, AsicsHkPresent: true},
-		{Name: "2018-05-22_13.33.56__mytest", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
-		{Name: "2018-05-22_13.38.15__test_backhome", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
-		{Name: "2018-05-22_15.22.22__test_withGPS", NumOfRawFiles: 0, NumOfSumFiles: 0, ExternHkPresent: true},
+		{
+			Name:           "testbackups",
+			DirName:        "2018-04-06_14.20.35__testbackups",
+			CreationTime:   time.Date(2018, 4, 6, 14, 20, 35, 0, time.UTC),
+			NumOfRawFiles:  1,
+			NumOfSumFiles:  1,
+			AsicsHkPresent: true,
+		},
+		{
+			Name:            "mytest",
+			DirName:         "2018-05-22_13.33.56__mytest",
+			CreationTime:    time.Date(2018, 5, 22, 13, 33, 56, 0, time.UTC),
+			NumOfRawFiles:   0,
+			NumOfSumFiles:   0,
+			ExternHkPresent: true,
+		},
+		{
+			Name:            "test_backhome",
+			DirName:         "2018-05-22_13.38.15__test_backhome",
+			CreationTime:    time.Date(2018, 5, 22, 13, 38, 15, 0, time.UTC),
+			NumOfRawFiles:   0,
+			NumOfSumFiles:   0,
+			ExternHkPresent: true,
+		},
+		{
+			Name:            "test_withGPS",
+			DirName:         "2018-05-22_15.22.22__test_withGPS",
+			CreationTime:    time.Date(2018, 5, 22, 15, 22, 22, 0, time.UTC),
+			NumOfRawFiles:   0,
+			NumOfSumFiles:   0,
+			ExternHkPresent: true,
+		},
 	}
 	for _, dir := range expecteddirs {
 		var acq Acquisition
-		res := testdb.Where("directoryname = ?", dir.Name).First(&acq)
+		res := testdb.Where("directoryname = ?", dir.DirName).First(&acq)
 		if res.RecordNotFound() {
 			t.Fatalf("Acquisition \"%s\" not found in the database", dir.Name)
+		}
+
+		if acq.Name != dir.Name {
+			t.Fatalf("Acquisition name mismatch: \"%s\" != \"%s\"", acq.Name, dir.Name)
+		}
+
+		if acq.CreationTime != dir.CreationTime {
+			t.Fatalf("Creation time mismatch: \"%v\" != \"%v\"", acq.CreationTime, dir.CreationTime)
 		}
 
 		if res := testdb.Model(&acq).Related(&acq.RawFiles).Error; res != nil {
