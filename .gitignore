@@ -13,3 +13,6 @@ coverage.txt
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# Ignore the SQLite database
+db.sqlite3
