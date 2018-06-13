@@ -149,6 +149,13 @@ func TestRefresh(t *testing.T) {
 			t.Fatalf("Wrong number of raw files for \"%s\", it is %d but it should be %d (%v)",
 				dir.Name, len(acq.RawFiles), dir.NumOfRawFiles, acq.RawFiles)
 		}
+		if len(acq.RawFiles) > 0 {
+			if acq.RawFiles[0].AsicNumber != 1 {
+				t.Fatalf("Wrong ASIC number (%d) for raw file %s",
+					acq.RawFiles[0].AsicNumber,
+					acq.RawFiles[0].FileName)
+			}
+		}
 
 		if res := testdb.Model(&acq).Related(&acq.SumFiles).Error; res != nil {
 			t.Fatalf("Error for acquisition %d (%s): %s", acq.ID, acq.Directoryname, res)
@@ -156,6 +163,13 @@ func TestRefresh(t *testing.T) {
 		if len(acq.SumFiles) != dir.NumOfSumFiles {
 			t.Fatalf("Wrong number of science files for \"%s\", it is %d but it should be %d",
 				dir.Name, len(acq.SumFiles), dir.NumOfSumFiles)
+		}
+		if len(acq.SumFiles) > 0 {
+			if acq.SumFiles[0].AsicNumber != 1 {
+				t.Fatalf("Wrong ASIC number (%d) for science file %s",
+					acq.SumFiles[0].AsicNumber,
+					acq.SumFiles[0].FileName)
+			}
 		}
 
 		if dir.AsicsHkPresent && acq.AsicHkFileName == "" {
