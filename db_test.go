@@ -75,7 +75,7 @@ func TestSession(t *testing.T) {
 type ExpectedDir struct {
 	Name            string
 	DirName         string
-	CreationTime    time.Time
+	AcquisitionTime time.Time
 	NumOfRawFiles   int
 	NumOfSumFiles   int
 	AsicsHkPresent  bool
@@ -95,17 +95,17 @@ func TestRefresh(t *testing.T) {
 
 	expecteddirs := []ExpectedDir{
 		{
-			Name:           "testbackups",
-			DirName:        "2018-04-06_14.20.35__testbackups",
-			CreationTime:   time.Date(2018, 4, 6, 14, 20, 35, 0, time.UTC),
-			NumOfRawFiles:  1,
-			NumOfSumFiles:  1,
-			AsicsHkPresent: true,
+			Name:            "testbackups",
+			DirName:         "2018-04-06_14.20.35__testbackups",
+			AcquisitionTime: time.Date(2018, 4, 6, 14, 20, 35, 0, time.UTC),
+			NumOfRawFiles:   1,
+			NumOfSumFiles:   1,
+			AsicsHkPresent:  true,
 		},
 		{
 			Name:            "mytest",
 			DirName:         "2018-05-22_13.33.56__mytest",
-			CreationTime:    time.Date(2018, 5, 22, 13, 33, 56, 0, time.UTC),
+			AcquisitionTime: time.Date(2018, 5, 22, 13, 33, 56, 0, time.UTC),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
@@ -113,7 +113,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "test_backhome",
 			DirName:         "2018-05-22_13.38.15__test_backhome",
-			CreationTime:    time.Date(2018, 5, 22, 13, 38, 15, 0, time.UTC),
+			AcquisitionTime: time.Date(2018, 5, 22, 13, 38, 15, 0, time.UTC),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
@@ -121,7 +121,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "test_withGPS",
 			DirName:         "2018-05-22_15.22.22__test_withGPS",
-			CreationTime:    time.Date(2018, 5, 22, 15, 22, 22, 0, time.UTC),
+			AcquisitionTime: time.Date(2018, 5, 22, 15, 22, 22, 0, time.UTC),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
@@ -138,8 +138,8 @@ func TestRefresh(t *testing.T) {
 			t.Fatalf("Acquisition name mismatch: \"%s\" != \"%s\"", acq.Name, dir.Name)
 		}
 
-		if acq.CreationTime != dir.CreationTime {
-			t.Fatalf("Creation time mismatch: \"%v\" != \"%v\"", acq.CreationTime, dir.CreationTime)
+		if acq.AcquisitionTime != dir.AcquisitionTime {
+			t.Fatalf("Creation time mismatch: \"%v\" != \"%v\"", acq.AcquisitionTime, dir.AcquisitionTime)
 		}
 
 		if res := testdb.Model(&acq).Related(&acq.RawFiles).Error; res != nil {
@@ -220,5 +220,9 @@ func TestMain(m *testing.M) {
 	defer testdb.Close()
 
 	InitDb(testdb, &Configuration{})
+	app = &App{
+		config: nil,
+		db:     testdb,
+	}
 	os.Exit(m.Run())
 }

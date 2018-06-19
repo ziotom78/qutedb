@@ -57,32 +57,33 @@ type Session struct {
 
 // A RawDataFile represents the file containing raw data acquired with one ASIC
 type RawDataFile struct {
-	ID            int `gorm:"primary_key"`
-	FileName      string
-	AsicNumber    int
-	AcquisitionID int
+	ID            int    `json:"id" gorm:"primary_key"`
+	FileName      string `json:"file_name"`
+	AsicNumber    int    `json:"asic_number"`
+	AcquisitionID int    `json:"-"`
 }
 
 // A SumDataFile represents the file containing science data acquired with one ASIC
 type SumDataFile struct {
-	ID            int `gorm:"primary_key"`
-	FileName      string
-	AsicNumber    int
-	AcquisitionID int
+	ID            int    `json:"id" gorm:"primary_key"`
+	FileName      string `json:"file_name"`
+	AsicNumber    int    `json:"asic_number"`
+	AcquisitionID int    `json:"-"`
 }
 
 // An Acquisition represents a set of files within a folder in the repository
 type Acquisition struct {
-	gorm.Model
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
 
-	Name               string
-	Directoryname      string `gorm:"unique_index"`
-	CreationTime       time.Time
-	RawFiles           []RawDataFile
-	SumFiles           []SumDataFile
-	AsicHkFileName     string
-	ExternHkFileName   string
-	CryostatHkFileName string
+	Name               string        `json:"name"`
+	Directoryname      string        `json:"directory_name" gorm:"unique_index"`
+	AcquisitionTime    time.Time     `json:"acquisition_time"`
+	RawFiles           []RawDataFile `json:"-"`
+	SumFiles           []SumDataFile `json:"-"`
+	AsicHkFileName     string        `json:"-"`
+	ExternHkFileName   string        `json:"-"`
+	CryostatHkFileName string        `json:"-"`
 }
 
 // InitDb creates all the tables in the database. It takes care
@@ -159,15 +160,15 @@ func findOneMatchingFile(path string, mask string) (string, error) {
 // really within the repository or not.
 func refreshFolder(db *gorm.DB, folderPath string) error {
 	dirname := filepath.Base(folderPath)
-	creationTime, err := time.Parse("2006-01-02_15.04.05", dirname[:19])
+	acquisitionTime, err := time.Parse("2006-01-02_15.04.05", dirname[:19])
 	if err != nil {
 		panic(fmt.Sprintf("Wrong time in string \"%s\"", dirname))
 	}
 
 	newacq := Acquisition{
-		Name:          dirname[21:],
-		Directoryname: dirname,
-		CreationTime:  creationTime,
+		Name:            dirname[21:],
+		Directoryname:   dirname,
+		AcquisitionTime: acquisitionTime,
 	}
 
 	// Check if the folder is already present in the db

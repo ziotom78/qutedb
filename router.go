@@ -25,6 +25,7 @@ THE SOFTWARE.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -73,7 +74,26 @@ func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 	//user, _ := data.UserByUsername
 }
 
-func getTestListHandler(w http.ResponseWriter, r *http.Request) {
+func getAcquisitionListHandler(w http.ResponseWriter, r *http.Request) {
+	var acq []Acquisition
+	if app == nil {
+		w.WriteHeader(500)
+		return
+	}
+	if app.db.Find(&acq).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database: %s", app.db.Error)
+		return
+	}
+
+	data, err := json.Marshal(acq)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprint(w, "Unable to encode the list of acquisitions")
+		return
+	}
+
+	w.Write(data)
 }
 
 func mainEventLoop(app *App) {
@@ -86,7 +106,7 @@ func mainEventLoop(app *App) {
 
 	router.HandleFunc("/", homeHandler)
 	router.HandleFunc("/authenticate", authenticateHandler)
-	router.HandleFunc("/api/v1/tests", getTestListHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions", getAcquisitionListHandler).Methods("GET")
 
 	address := fmt.Sprintf("%s:%d",
 		app.config.ServerName,
