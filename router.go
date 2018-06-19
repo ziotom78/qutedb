@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -74,7 +75,7 @@ func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 	//user, _ := data.UserByUsername
 }
 
-func getAcquisitionListHandler(w http.ResponseWriter, r *http.Request) {
+func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 	var acq []Acquisition
 	if app == nil {
 		w.WriteHeader(500)
@@ -96,6 +97,38 @@ func getAcquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	var acq Acquisition
+	if app.db.Where("ID == ?", id).First(&acq).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
+		return
+	}
+
+	data, err := json.Marshal(acq)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprint(w, "Unable to encode the list of acquisitions")
+		return
+	}
+
+	w.Write(data)
+}
+
+func initRouter(router *mux.Router) {
+	router.HandleFunc("/", homeHandler)
+	router.HandleFunc("/authenticate", authenticateHandler)
+	router.HandleFunc("/api/v1/acquisitions", acquisitionListHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", acquisitionHandler).Methods("GET")
+}
+
 func mainEventLoop(app *App) {
 	router := mux.NewRouter()
 
@@ -103,10 +136,7 @@ func mainEventLoop(app *App) {
 		http.FileServer(http.Dir(app.config.StaticPath))))
 
 	router.Use(logMiddleware)
-
-	router.HandleFunc("/", homeHandler)
-	router.HandleFunc("/authenticate", authenticateHandler)
-	router.HandleFunc("/api/v1/acquisitions", getAcquisitionListHandler).Methods("GET")
+	initRouter(router)
 
 	address := fmt.Sprintf("%s:%d",
 		app.config.ServerName,
