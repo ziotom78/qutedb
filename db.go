@@ -30,6 +30,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -123,6 +124,9 @@ func findMultipleFiles(path string, mask string) ([]string, error) {
 	if len(filenames) == 0 {
 		return []string{}, err
 	}
+
+	// Sort the files in lexicographic order
+	sort.Strings(filenames)
 
 	result := []string{}
 	for _, curname := range filenames {
@@ -235,6 +239,10 @@ func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 	if err != nil {
 		return err
 	}
+
+	// Keep all the files sorted lexicographically
+	sort.Strings(folders)
+
 	for _, curfolder := range folders {
 		if fi, err := os.Stat(curfolder); err != nil || !fi.Mode().IsDir() {
 			// Skip entries that are not real directories

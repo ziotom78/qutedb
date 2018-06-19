@@ -78,8 +78,7 @@ func authenticateHandler(w http.ResponseWriter, r *http.Request) {
 func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 	var acq []Acquisition
 	if app == nil {
-		w.WriteHeader(500)
-		return
+		panic("app cannot be nil")
 	}
 	if app.db.Find(&acq).Error != nil {
 		w.WriteHeader(500)
@@ -90,7 +89,7 @@ func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(acq)
 	if err != nil {
 		w.WriteHeader(500)
-		fmt.Fprint(w, "Unable to encode the list of acquisitions")
+		fmt.Fprintf(w, "Unable to encode the list of acquisitions, reason: %s", err)
 		return
 	}
 
@@ -99,14 +98,13 @@ func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 
 func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
 	if app == nil {
-		w.WriteHeader(500)
-		return
+		panic("app cannot be nil")
 	}
 
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if app.db.Where("ID == ?", id).First(&acq).Error != nil {
+	if app.db.Where("ID = ?", id).First(&acq).Error != nil {
 		w.WriteHeader(500)
 		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
 		return
@@ -115,7 +113,31 @@ func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(acq)
 	if err != nil {
 		w.WriteHeader(500)
-		fmt.Fprint(w, "Unable to encode the list of acquisitions")
+		fmt.Fprintf(w, "Unable to encode the acquisition, reason: %s", err)
+		return
+	}
+
+	w.Write(data)
+}
+
+func rawListHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	var rawFiles []RawDataFile
+	if app.db.Where("acquisition_id = ?", id).Find(&rawFiles).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for raw files belonging to ID %d: %s", id, app.db.Error)
+		return
+	}
+
+	data, err := json.Marshal(rawFiles)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to encode the list of raw files, reason: %s", err)
 		return
 	}
 
@@ -127,6 +149,7 @@ func initRouter(router *mux.Router) {
 	router.HandleFunc("/authenticate", authenticateHandler)
 	router.HandleFunc("/api/v1/acquisitions", acquisitionListHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", acquisitionHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", rawListHandler).Methods("GET")
 }
 
 func mainEventLoop(app *App) {
