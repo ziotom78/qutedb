@@ -28,7 +28,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -144,12 +146,46 @@ func rawListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func rawFileHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
+	asicNumber, _ := strconv.Atoi(vars["asic_num"])
+	var rawFiles []RawDataFile
+	if app.db.Where("acquisition_id = ? AND asic_number = ?",
+		acquisitionID, asicNumber).Find(&rawFiles).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for raw file (ASIC %d) belonging to ID %d: %s",
+			asicNumber, acquisitionID, app.db.Error)
+		return
+	}
+
+	fitsfile, err := os.Open(rawFiles[0].FileName)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to retrieve the FITS file: %s", err)
+		return
+	}
+	defer fitsfile.Close()
+
+	if _, err := io.Copy(w, fitsfile); err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+	}
+
+	w.Header().Set("Content-Type", "application/fits")
+}
+
 func initRouter(router *mux.Router) {
 	router.HandleFunc("/", homeHandler)
 	router.HandleFunc("/authenticate", authenticateHandler)
 	router.HandleFunc("/api/v1/acquisitions", acquisitionListHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", acquisitionHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", rawListHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", rawFileHandler).Methods("GET")
 }
 
 func mainEventLoop(app *App) {

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/astrogo/fitsio"
+
 	"github.com/gorilla/mux"
 )
 
@@ -77,5 +79,29 @@ func TestHandleRawFiles(t *testing.T) {
 
 	if filepath.Base(rawFiles[0].FileName) != "raw-asic1-2018.04.06.142047.fits" {
 		t.Errorf("Wrong file name: %s", rawFiles[0].FileName)
+	}
+}
+
+func TestHandleRawFile(t *testing.T) {
+	router := mux.NewRouter()
+	initRouter(router)
+
+	writer := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/rawdata/1", nil)
+	router.ServeHTTP(writer, request)
+
+	if writer.Code != 200 {
+		t.Errorf("Response code is %v", writer.Code)
+	}
+
+	f, err := fitsio.Open(writer.Body)
+	if err != nil {
+		t.Errorf("Unable to decode FITS file: %s", err)
+	}
+	defer f.Close()
+
+	if f.HDU(1).Header().Get("DATE").Value != "2018-04-06 14:20:35" {
+		t.Errorf("Wrong value for DATE in FITS file: %s",
+			f.HDU(1).Header().Get("DATE").Value)
 	}
 }
