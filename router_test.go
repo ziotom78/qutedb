@@ -155,3 +155,27 @@ func TestHandleSumFile(t *testing.T) {
 			f.HDU(1).Header().Get("DATE").Value)
 	}
 }
+
+func TestAsicHkFile(t *testing.T) {
+	router := mux.NewRouter()
+	initRouter(router)
+
+	writer := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/asichk", nil)
+	router.ServeHTTP(writer, request)
+
+	if writer.Code != 200 {
+		t.Errorf("Response code is %v", writer.Code)
+	}
+
+	f, err := fitsio.Open(writer.Body)
+	if err != nil {
+		t.Errorf("Unable to decode FITS file: %s", err)
+	}
+	defer f.Close()
+
+	if f.HDU(1).Header().Get("DATE").Value != "2018-04-06 14:20:35" {
+		t.Errorf("Wrong value for DATE in FITS file: %s",
+			f.HDU(1).Header().Get("DATE").Value)
+	}
+}
