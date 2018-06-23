@@ -270,6 +270,36 @@ func asicHkHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/fits")
 }
 
+func externHkHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	var acq Acquisition
+	if app.db.Where("ID = ?", id).First(&acq).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
+		return
+	}
+
+	fitsfile, err := os.Open(acq.ExternHkFileName)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to retrieve the FITS file \"%s\": %s", acq.ExternHkFileName, err)
+		return
+	}
+	defer fitsfile.Close()
+
+	if _, err := io.Copy(w, fitsfile); err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+	}
+
+	w.Header().Set("Content-Type", "application/fits")
+}
+
 func initRouter(router *mux.Router) {
 	router.HandleFunc("/", homeHandler)
 	router.HandleFunc("/authenticate", authenticateHandler)
@@ -280,6 +310,7 @@ func initRouter(router *mux.Router) {
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", sumListHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", sumFileHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", asicHkHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", externHkHandler).Methods("GET")
 }
 
 func mainEventLoop(app *App) {
