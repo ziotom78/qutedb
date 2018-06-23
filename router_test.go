@@ -105,3 +105,53 @@ func TestHandleRawFile(t *testing.T) {
 			f.HDU(1).Header().Get("DATE").Value)
 	}
 }
+
+func TestHandleSumFiles(t *testing.T) {
+	router := mux.NewRouter()
+	initRouter(router)
+
+	writer := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/sumdata", nil)
+	router.ServeHTTP(writer, request)
+
+	if writer.Code != 200 {
+		t.Errorf("Response code is %v", writer.Code)
+	}
+
+	var sumFiles []SumDataFile
+	if err := json.Unmarshal(writer.Body.Bytes(), &sumFiles); err != nil {
+		t.Errorf("Unable to interpret JSON properly (%s): %s", err, string(writer.Body.Bytes()))
+	}
+
+	if len(sumFiles) != 1 {
+		t.Errorf("Wrong number of science files: %d", len(sumFiles))
+	}
+
+	if filepath.Base(sumFiles[0].FileName) != "science-asic1-2018.04.06.142047.fits" {
+		t.Errorf("Wrong file name: %s", sumFiles[0].FileName)
+	}
+}
+
+func TestHandleSumFile(t *testing.T) {
+	router := mux.NewRouter()
+	initRouter(router)
+
+	writer := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/sumdata/1", nil)
+	router.ServeHTTP(writer, request)
+
+	if writer.Code != 200 {
+		t.Errorf("Response code is %v", writer.Code)
+	}
+
+	f, err := fitsio.Open(writer.Body)
+	if err != nil {
+		t.Errorf("Unable to decode FITS file: %s", err)
+	}
+	defer f.Close()
+
+	if f.HDU(1).Header().Get("DATE").Value != "2018-04-06 14:20:35" {
+		t.Errorf("Wrong value for DATE in FITS file: %s",
+			f.HDU(1).Header().Get("DATE").Value)
+	}
+}

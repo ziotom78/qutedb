@@ -95,6 +95,7 @@ func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -119,6 +120,7 @@ func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -143,6 +145,7 @@ func rawListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
 
@@ -179,6 +182,64 @@ func rawFileHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/fits")
 }
 
+func sumListHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	var sumFiles []SumDataFile
+	if app.db.Where("acquisition_id = ?", id).Find(&sumFiles).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for science files belonging to ID %d: %s", id, app.db.Error)
+		return
+	}
+
+	data, err := json.Marshal(sumFiles)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to encode the list of science files, reason: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func sumFileHandler(w http.ResponseWriter, r *http.Request) {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
+	asicNumber, _ := strconv.Atoi(vars["asic_num"])
+	var sumFiles []SumDataFile
+	if app.db.Where("acquisition_id = ? AND asic_number = ?",
+		acquisitionID, asicNumber).Find(&sumFiles).Error != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to query the database for science file (ASIC %d) belonging to ID %d: %s",
+			asicNumber, acquisitionID, app.db.Error)
+		return
+	}
+
+	fitsfile, err := os.Open(sumFiles[0].FileName)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to retrieve the FITS file: %s", err)
+		return
+	}
+	defer fitsfile.Close()
+
+	if _, err := io.Copy(w, fitsfile); err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+	}
+
+	w.Header().Set("Content-Type", "application/fits")
+}
+
 func initRouter(router *mux.Router) {
 	router.HandleFunc("/", homeHandler)
 	router.HandleFunc("/authenticate", authenticateHandler)
@@ -186,6 +247,8 @@ func initRouter(router *mux.Router) {
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", acquisitionHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", rawListHandler).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", rawFileHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", sumListHandler).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", sumFileHandler).Methods("GET")
 }
 
 func mainEventLoop(app *App) {
