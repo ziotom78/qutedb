@@ -53,22 +53,29 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) {
+func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) error {
 	var files []string
 	for _, file := range fn {
 		files = append(files, fmt.Sprintf("template/%s.html", file))
 	}
 
 	templates := template.Must(template.ParseFiles(files...))
-	templates.ExecuteTemplate(w, "layout", data)
+
+	return templates.ExecuteTemplate(w, "layout", data)
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	//_, err := session(w, r)
 	if 1 != 0 {
-		generateHTML(w, []string{}, "layout", "public.navbar", "index")
+		err := generateHTML(w, []string{}, "layout", "public.navbar", "index")
+		if err != nil {
+			log.Fatalf("could not execute template: %v", err)
+		}
 	} else {
-		generateHTML(w, []string{}, "layout", "private.navbar", "index")
+		err := generateHTML(w, []string{}, "layout", "private.navbar", "index")
+		if err != nil {
+			log.Fatalf("could not execute template: %v", err)
+		}
 	}
 }
 
