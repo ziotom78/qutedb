@@ -26,6 +26,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -115,4 +116,18 @@ func (app *App) Run() {
 	}).Info("Main loop is going to start now")
 
 	app.serve()
+}
+
+type Error struct {
+	err  error
+	msg  string
+	code int
+}
+
+func (e Error) Error() string {
+	code := e.code
+	if code == 0 {
+		code = http.StatusInternalServerError
+	}
+	return fmt.Sprintf("%s: %v (code=%d)", e.msg, e.err, code)
 }

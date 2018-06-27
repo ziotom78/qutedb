@@ -215,6 +215,8 @@ func TestErrorsOnRefresh(t *testing.T) {
 	}
 }
 
+var app *App
+
 func TestMain(m *testing.M) {
 	testdb, _ = gorm.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
 	defer testdb.Close()

@@ -14,7 +14,7 @@ import (
 
 func TestHandleAcquisitionList(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions", nil)
@@ -36,7 +36,7 @@ func TestHandleAcquisitionList(t *testing.T) {
 
 func TestHandleAcquisition(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1", nil)
@@ -58,7 +58,7 @@ func TestHandleAcquisition(t *testing.T) {
 
 func TestHandleRawFiles(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/rawdata", nil)
@@ -84,7 +84,7 @@ func TestHandleRawFiles(t *testing.T) {
 
 func TestHandleRawFile(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/rawdata/1", nil)
@@ -108,7 +108,7 @@ func TestHandleRawFile(t *testing.T) {
 
 func TestHandleSumFiles(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/sumdata", nil)
@@ -134,7 +134,7 @@ func TestHandleSumFiles(t *testing.T) {
 
 func TestHandleSumFile(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/sumdata/1", nil)
@@ -158,7 +158,7 @@ func TestHandleSumFile(t *testing.T) {
 
 func TestAsicHkFile(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/1/asichk", nil)
@@ -182,7 +182,7 @@ func TestAsicHkFile(t *testing.T) {
 
 func TestExternHkFile(t *testing.T) {
 	router := mux.NewRouter()
-	initRouter(router)
+	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/4/externhk", nil)
