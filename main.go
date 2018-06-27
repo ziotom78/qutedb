@@ -31,6 +31,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func main() {
+	app := NewApp()
+	app.Run()
+}
+
 // configureLogging sets up the Logrus library in order to use the
 // desired format and verbosity level
 func configureLogging(config *Configuration) {
@@ -55,9 +60,4 @@ func configureLogging(config *Configuration) {
 	case "debug", "verbose":
 		log.SetLevel(log.DebugLevel)
 	}
-}
-
-func main() {
-	InitApp()
-	RunApp()
 }

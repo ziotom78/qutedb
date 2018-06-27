@@ -313,7 +313,7 @@ func initRouter(router *mux.Router) {
 	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", externHkHandler).Methods("GET")
 }
 
-func mainEventLoop(app *App) {
+func (app *App) serve() {
 	router := mux.NewRouter()
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
