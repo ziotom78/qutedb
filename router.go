@@ -53,53 +53,53 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) {
+func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) error {
 	var files []string
 	for _, file := range fn {
 		files = append(files, fmt.Sprintf("template/%s.html", file))
 	}
 
 	templates := template.Must(template.ParseFiles(files...))
-	templates.ExecuteTemplate(w, "layout", data)
+
+	return templates.ExecuteTemplate(w, "layout", data)
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
+func homeHandler(w http.ResponseWriter, r *http.Request) error {
 	//_, err := session(w, r)
 	if 1 != 0 {
-		generateHTML(w, []string{}, "layout", "public.navbar", "index")
+		return generateHTML(w, []string{}, "layout", "public.navbar", "index")
 	} else {
-		generateHTML(w, []string{}, "layout", "private.navbar", "index")
+		return generateHTML(w, []string{}, "layout", "private.navbar", "index")
 	}
 }
 
-func authenticateHandler(w http.ResponseWriter, r *http.Request) {
+func authenticateHandler(w http.ResponseWriter, r *http.Request) error {
 	r.ParseForm()
 	//user, _ := data.UserByUsername
+
+	return nil
 }
 
-func acquisitionListHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) acquisitionListHandler(w http.ResponseWriter, r *http.Request) error {
 	var acq []Acquisition
 	if app == nil {
 		panic("app cannot be nil")
 	}
-	if app.db.Find(&acq).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database: %s", app.db.Error)
-		return
+	if err := app.db.Find(&acq).Error; err != nil {
+		return Error{err: err, msg: "Unable to query the database"}
 	}
 
 	data, err := json.Marshal(acq)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to encode the list of acquisitions, reason: %s", err)
-		return
+		return Error{err: err, msg: "Unable to encode the list of acquisitions"}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+	return nil
 }
 
-func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -107,24 +107,21 @@ func acquisitionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if app.db.Where("ID = ?", id).First(&acq).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
-		return
+	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
 	}
 
 	data, err := json.Marshal(acq)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to encode the acquisition, reason: %s", err)
-		return
+		return Error{err: err, msg: "Unable to encode the acquisition"}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+	return nil
 }
 
-func rawListHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) rawListHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -132,24 +129,21 @@ func rawListHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var rawFiles []RawDataFile
-	if app.db.Where("acquisition_id = ?", id).Find(&rawFiles).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for raw files belonging to ID %d: %s", id, app.db.Error)
-		return
+	if err := app.db.Where("acquisition_id = ?", id).Find(&rawFiles).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for raw files belonging to ID %d", id)}
 	}
 
 	data, err := json.Marshal(rawFiles)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to encode the list of raw files, reason: %s", err)
-		return
+		return Error{err: err, msg: "Unable to encode the list of raw files"}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+	return nil
 }
 
-func rawFileHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) rawFileHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -158,31 +152,31 @@ func rawFileHandler(w http.ResponseWriter, r *http.Request) {
 	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var rawFiles []RawDataFile
-	if app.db.Where("acquisition_id = ? AND asic_number = ?",
-		acquisitionID, asicNumber).Find(&rawFiles).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for raw file (ASIC %d) belonging to ID %d: %s",
-			asicNumber, acquisitionID, app.db.Error)
-		return
+	if err := app.db.Where("acquisition_id = ? AND asic_number = ?",
+		acquisitionID, asicNumber).Find(&rawFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for raw file (ASIC %d) belonging to ID %d",
+				asicNumber, acquisitionID,
+			),
+		}
 	}
 
 	fitsfile, err := os.Open(rawFiles[0].FileName)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to retrieve the FITS file: %s", err)
-		return
+		return Error{err: err, msg: "Unable to retrieve the FITS file"}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+		return Error{err: err, msg: "Unable to send the FITS file"}
 	}
 
 	w.Header().Set("Content-Type", "application/fits")
+	return nil
 }
 
-func sumListHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) sumListHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -190,24 +184,21 @@ func sumListHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var sumFiles []SumDataFile
-	if app.db.Where("acquisition_id = ?", id).Find(&sumFiles).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for science files belonging to ID %d: %s", id, app.db.Error)
-		return
+	if err := app.db.Where("acquisition_id = ?", id).Find(&sumFiles).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science files belonging to ID %d", id)}
 	}
 
 	data, err := json.Marshal(sumFiles)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to encode the list of science files, reason: %s", err)
-		return
+		return Error{err: err, msg: "Unable to encode the list of science files"}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+	return nil
 }
 
-func sumFileHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) sumFileHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -216,31 +207,28 @@ func sumFileHandler(w http.ResponseWriter, r *http.Request) {
 	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var sumFiles []SumDataFile
-	if app.db.Where("acquisition_id = ? AND asic_number = ?",
-		acquisitionID, asicNumber).Find(&sumFiles).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for science file (ASIC %d) belonging to ID %d: %s",
-			asicNumber, acquisitionID, app.db.Error)
-		return
+	if err := app.db.Where("acquisition_id = ? AND asic_number = ?",
+		acquisitionID, asicNumber).Find(&sumFiles).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science file (ASIC %d) belonging to ID %d",
+			asicNumber, acquisitionID,
+		)}
 	}
 
 	fitsfile, err := os.Open(sumFiles[0].FileName)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to retrieve the FITS file: %s", err)
-		return
+		return Error{err: err, msg: "Unable to retrieve the FITS file"}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+		return Error{err: err, msg: "Unable to send the FITS file"}
 	}
 
 	w.Header().Set("Content-Type", "application/fits")
+	return nil
 }
 
-func asicHkHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -248,29 +236,25 @@ func asicHkHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if app.db.Where("ID = ?", id).First(&acq).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
-		return
+	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
 	}
 
 	fitsfile, err := os.Open(acq.AsicHkFileName)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to retrieve the FITS file \"%s\": %s", acq.AsicHkFileName, err)
-		return
+		return Error{err: err, msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.AsicHkFileName)}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+		return Error{err: err, msg: "Unable to send the FITS file"}
 	}
 
 	w.Header().Set("Content-Type", "application/fits")
+	return nil
 }
 
-func externHkHandler(w http.ResponseWriter, r *http.Request) {
+func (app *App) externHkHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
@@ -278,49 +262,32 @@ func externHkHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if app.db.Where("ID = ?", id).First(&acq).Error != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to query the database for acquisition with ID %d: %s", id, app.db.Error)
-		return
+	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
 	}
 
 	fitsfile, err := os.Open(acq.ExternHkFileName)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to retrieve the FITS file \"%s\": %s", acq.ExternHkFileName, err)
-		return
+		return Error{err: err, msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.ExternHkFileName)}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "Unable to send the FITS file: %s", err)
+		return Error{err: err, msg: "Unable to send the FITS file"}
 	}
 
 	w.Header().Set("Content-Type", "application/fits")
+	return nil
 }
 
-func initRouter(router *mux.Router) {
-	router.HandleFunc("/", homeHandler)
-	router.HandleFunc("/authenticate", authenticateHandler)
-	router.HandleFunc("/api/v1/acquisitions", acquisitionListHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", acquisitionHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", rawListHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", rawFileHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", sumListHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", sumFileHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", asicHkHandler).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", externHkHandler).Methods("GET")
-}
-
-func mainEventLoop(app *App) {
+func (app *App) serve() {
 	router := mux.NewRouter()
 
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/",
 		http.FileServer(http.Dir(app.config.StaticPath))))
 
 	router.Use(logMiddleware)
-	initRouter(router)
+	app.initRouter(router)
 
 	address := fmt.Sprintf("%s:%d",
 		app.config.ServerName,
@@ -333,4 +300,37 @@ func mainEventLoop(app *App) {
 	}
 
 	log.Fatal(srv.ListenAndServe())
+}
+
+func (app *App) initRouter(router *mux.Router) {
+	router.HandleFunc("/", app.wrap(homeHandler))
+	router.HandleFunc("/authenticate", app.wrap(authenticateHandler))
+	router.HandleFunc("/api/v1/acquisitions", app.wrap(app.acquisitionListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", app.wrap(app.acquisitionHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", app.wrap(app.rawListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", app.wrap(app.rawFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", app.wrap(app.sumListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", app.wrap(app.sumFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", app.wrap(app.asicHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", app.wrap(app.externHkHandler)).Methods("GET")
+}
+
+func (app *App) wrap(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := f(w, r)
+		if err != nil {
+			code := http.StatusInternalServerError
+			msg := err.Error()
+			if e, ok := err.(Error); ok {
+				code = e.code
+				msg = e.msg
+			}
+			http.Error(w, err.Error(), code)
+			log.WithFields(log.Fields{
+				"handler": r.URL.Path,
+				"error":   msg,
+			}).Error("error executing handler")
+			return
+		}
+	}
 }

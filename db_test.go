@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -183,13 +183,8 @@ func TestRefresh(t *testing.T) {
 	}
 }
 
-func touch(filename string) error {
-	newFile, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("Unable to create file \"%s\"", filename)
-	}
-	newFile.Close()
-	return nil
+func touch(name string) error {
+	return ioutil.WriteFile(name, nil, 0644)
 }
 
 func TestErrorsOnRefresh(t *testing.T) {
@@ -214,6 +209,8 @@ func TestErrorsOnRefresh(t *testing.T) {
 		t.Fatal("RefreshDbContents did not signal the presence of more than an HK file")
 	}
 }
+
+var app *App
 
 func TestMain(m *testing.M) {
 	testdb, _ = gorm.Open("sqlite3", "file::memory:?mode=memory&cache=shared")

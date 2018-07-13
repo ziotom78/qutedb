@@ -26,6 +26,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -40,10 +41,8 @@ type App struct {
 	db     *gorm.DB
 }
 
-var app *App
-
-// InitApp perform a number of initializations on the global "app" object.
-func InitApp() {
+// NewApp creates a new application and performs a number of initializations.
+func NewApp() *App {
 	config := createConfiguration()
 
 	// Before calling configureLogging, we need to initialize the output file in
@@ -78,15 +77,14 @@ func InitApp() {
 		"configfile": config.ConfigurationFileName,
 	}).Info("Configuration has been read")
 
-	app = &App{
+	return &App{
 		config: config,
 		db:     nil,
 	}
 }
 
-// RunApp opens the database and starts the main loop (implemented through the
-// function mainEventLoop)
-func RunApp() {
+// Run opens the database and starts the main loop.
+func (app *App) Run() {
 	log.WithFields(log.Fields{
 		"database_file": app.config.DatabaseFile,
 	}).Info("Going to establish a connection to database")
@@ -116,5 +114,20 @@ func RunApp() {
 		"server":      app.config.ServerName,
 		"port_number": app.config.PortNumber,
 	}).Info("Main loop is going to start now")
-	mainEventLoop(app)
+
+	app.serve()
+}
+
+type Error struct {
+	err  error
+	msg  string
+	code int
+}
+
+func (e Error) Error() string {
+	code := e.code
+	if code == 0 {
+		code = http.StatusInternalServerError
+	}
+	return fmt.Sprintf("%s: %v (code=%d)", e.msg, e.err, code)
 }
