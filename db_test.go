@@ -75,7 +75,7 @@ func TestSession(t *testing.T) {
 type ExpectedDir struct {
 	Name            string
 	DirName         string
-	AcquisitionTime time.Time
+	AcquisitionTime string
 	NumOfRawFiles   int
 	NumOfSumFiles   int
 	AsicsHkPresent  bool
@@ -97,7 +97,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "testbackups",
 			DirName:         "2018-04-06_14.20.35__testbackups",
-			AcquisitionTime: time.Date(2018, 4, 6, 14, 20, 35, 0, time.UTC),
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2018, 4, 6, 14, 20, 35, 0, time.UTC)),
 			NumOfRawFiles:   1,
 			NumOfSumFiles:   1,
 			AsicsHkPresent:  true,
@@ -105,7 +105,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "mytest",
 			DirName:         "2018-05-22_13.33.56__mytest",
-			AcquisitionTime: time.Date(2018, 5, 22, 13, 33, 56, 0, time.UTC),
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2018, 5, 22, 13, 33, 56, 0, time.UTC)),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
@@ -113,7 +113,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "test_backhome",
 			DirName:         "2018-05-22_13.38.15__test_backhome",
-			AcquisitionTime: time.Date(2018, 5, 22, 13, 38, 15, 0, time.UTC),
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2018, 5, 22, 13, 38, 15, 0, time.UTC)),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
@@ -121,7 +121,7 @@ func TestRefresh(t *testing.T) {
 		{
 			Name:            "test_withGPS",
 			DirName:         "2018-05-22_15.22.22__test_withGPS",
-			AcquisitionTime: time.Date(2018, 5, 22, 15, 22, 22, 0, time.UTC),
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2018, 5, 22, 15, 22, 22, 0, time.UTC)),
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,

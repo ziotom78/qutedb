@@ -77,14 +77,24 @@ type Acquisition struct {
 	ID        uint      `gorm:"primary_key" json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 
-	Name               string        `json:"name"`
-	Directoryname      string        `json:"directory_name" gorm:"unique_index"`
-	AcquisitionTime    time.Time     `json:"acquisition_time"`
+	Name          string `json:"name"`
+	Directoryname string `json:"directory_name" gorm:"unique_index"`
+	// We encode the acquisition time as a string in order to have
+	// full control on the formatting, which is always "YYYYMMDDhhmmss"
+	AcquisitionTime    string        `json:"acquisition_time"`
 	RawFiles           []RawDataFile `json:"-"`
 	SumFiles           []SumDataFile `json:"-"`
 	AsicHkFileName     string        `json:"-"`
 	ExternHkFileName   string        `json:"-"`
 	CryostatHkFileName string        `json:"-"`
+}
+
+// TimeToCanonicalStr converts a standard date/time into
+// a string which is formatted according to the template "YYYYMMSShhmmss".
+// This is the format used in Acquisition.AcquisitionTime
+func TimeToCanonicalStr(t time.Time) string {
+	return fmt.Sprintf("%04d%02d%02d%02d%02d%02d",
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
 // InitDb creates all the tables in the database. It takes care
@@ -172,7 +182,7 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	newacq := Acquisition{
 		Name:            dirname[21:],
 		Directoryname:   dirname,
-		AcquisitionTime: acquisitionTime,
+		AcquisitionTime: TimeToCanonicalStr(acquisitionTime),
 	}
 
 	// Check if the folder is already present in the db
