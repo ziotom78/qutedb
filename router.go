@@ -53,10 +53,11 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// generateHTML assembles a number of HTML files in the "templates" directory
 func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) error {
 	var files []string
 	for _, file := range fn {
-		files = append(files, fmt.Sprintf("template/%s.html", file))
+		files = append(files, fmt.Sprintf("templates/%s.html", file))
 	}
 
 	templates := template.Must(template.ParseFiles(files...))
@@ -302,20 +303,7 @@ func (app *App) serve() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func (app *App) initRouter(router *mux.Router) {
-	router.HandleFunc("/", app.wrap(homeHandler))
-	router.HandleFunc("/authenticate", app.wrap(authenticateHandler))
-	router.HandleFunc("/api/v1/acquisitions", app.wrap(app.acquisitionListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", app.wrap(app.acquisitionHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", app.wrap(app.rawListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", app.wrap(app.rawFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", app.wrap(app.sumListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", app.wrap(app.sumFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", app.wrap(app.asicHkHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", app.wrap(app.externHkHandler)).Methods("GET")
-}
-
-func (app *App) wrap(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := f(w, r)
 		if err != nil {
@@ -333,4 +321,17 @@ func (app *App) wrap(f func(w http.ResponseWriter, r *http.Request) error) http.
 			return
 		}
 	}
+}
+
+func (app *App) initRouter(router *mux.Router) {
+	router.HandleFunc("/", app.handleErrWrap(homeHandler))
+	router.HandleFunc("/authenticate", app.handleErrWrap(authenticateHandler))
+	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", app.handleErrWrap(app.rawFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", app.handleErrWrap(app.sumListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", app.handleErrWrap(app.sumFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", app.handleErrWrap(app.asicHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", app.handleErrWrap(app.externHkHandler)).Methods("GET")
 }
