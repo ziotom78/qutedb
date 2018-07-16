@@ -106,10 +106,10 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 	}
 
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
+	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+			vars["acq_id"])}
 	}
 
 	data, err := json.Marshal(acq)
@@ -128,10 +128,13 @@ func (app *App) rawListHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
 	var rawFiles []RawDataFile
-	if err := app.db.Where("acquisition_id = ?", id).Find(&rawFiles).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for raw files belonging to ID %d", id)}
+	if err := app.db.Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).Find(&rawFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for raw files belonging to ID %s", vars["acq_id"]),
+		}
 	}
 
 	data, err := json.Marshal(rawFiles)
@@ -150,15 +153,15 @@ func (app *App) rawFileHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var rawFiles []RawDataFile
-	if err := app.db.Where("acquisition_id = ? AND asic_number = ?",
-		acquisitionID, asicNumber).Find(&rawFiles).Error; err != nil {
+	if err := app.db.Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ? AND asic_number = ?",
+			vars["acq_id"], asicNumber).Find(&rawFiles).Error; err != nil {
 		return Error{
 			err: err,
-			msg: fmt.Sprintf("Unable to query the database for raw file (ASIC %d) belonging to ID %d",
-				asicNumber, acquisitionID,
+			msg: fmt.Sprintf("Unable to query the database for raw file (ASIC %d) belonging to ID %s",
+				asicNumber, vars["acq_id"],
 			),
 		}
 	}
@@ -183,10 +186,10 @@ func (app *App) sumListHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
 	var sumFiles []SumDataFile
-	if err := app.db.Where("acquisition_id = ?", id).Find(&sumFiles).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science files belonging to ID %d", id)}
+	if err := app.db.Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).Find(&sumFiles).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science files belonging to ID %s", vars["acq_id"])}
 	}
 
 	data, err := json.Marshal(sumFiles)
@@ -205,14 +208,17 @@ func (app *App) sumFileHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	acquisitionID, _ := strconv.Atoi(vars["acq_id"])
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var sumFiles []SumDataFile
-	if err := app.db.Where("acquisition_id = ? AND asic_number = ?",
-		acquisitionID, asicNumber).Find(&sumFiles).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science file (ASIC %d) belonging to ID %d",
-			asicNumber, acquisitionID,
-		)}
+	if err := app.db.Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ? AND asic_number = ?",
+			vars["acq_id"], asicNumber).Find(&sumFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for science file (ASIC %d) belonging to ID %s",
+				asicNumber, vars["acq_id"],
+			),
+		}
 	}
 
 	fitsfile, err := os.Open(sumFiles[0].FileName)
@@ -235,10 +241,10 @@ func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
+	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+			vars["acq_id"])}
 	}
 
 	fitsfile, err := os.Open(acq.AsicHkFileName)
@@ -261,10 +267,10 @@ func (app *App) externHkHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
 	var acq Acquisition
-	if err := app.db.Where("ID = ?", id).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %d", id)}
+	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
+		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+			vars["acq_id"])}
 	}
 
 	fitsfile, err := os.Open(acq.ExternHkFileName)
@@ -327,11 +333,11 @@ func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/", app.handleErrWrap(homeHandler))
 	router.HandleFunc("/authenticate", app.handleErrWrap(authenticateHandler))
 	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", app.handleErrWrap(app.rawFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/sumdata", app.handleErrWrap(app.sumListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata", app.handleErrWrap(app.sumListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", app.handleErrWrap(app.sumFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/asichk", app.handleErrWrap(app.asicHkHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{id:[0-9]+}/externhk", app.handleErrWrap(app.externHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/asichk", app.handleErrWrap(app.asicHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/externhk", app.handleErrWrap(app.externHkHandler)).Methods("GET")
 }
