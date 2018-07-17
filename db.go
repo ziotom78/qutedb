@@ -97,8 +97,9 @@ func TimeToCanonicalStr(t time.Time) string {
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
-// InitDb creates all the tables in the database. It takes care
-// of not raising errors if the tables are already present.
+// InitDb creates all the tables in the database. It takes care of not raising
+// errors if the tables are already present. You should call this function only
+// once during the lifetime of the program, as it resets all open sessions.
 func InitDb(db *gorm.DB, config *Configuration) error {
 	db.AutoMigrate(
 		&User{},
@@ -129,6 +130,8 @@ func SumDirName(folder string) string {
 	return path.Join(folder, "Sums")
 }
 
+// findMultipleFiles returns a sorted list of files matching "mask" in the
+// specified "path"
 func findMultipleFiles(path string, mask string) ([]string, error) {
 	filenames, err := filepath.Glob(filepath.Join(path, mask))
 	if len(filenames) == 0 {
