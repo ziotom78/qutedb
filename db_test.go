@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,6 +39,22 @@ func TestUser(t *testing.T) {
 
 	if _, valid, _ := CheckUserPassword(testdb, refUserEmail, "thisisblatantlywrong"); valid {
 		t.Error("The password hash algorithm is accepting wrong passwords")
+	}
+
+	if foundUser, err := QueryUserByEmail(testdb, refUserEmail); foundUser == nil || err != nil {
+		if err != nil {
+			t.Errorf("Unexpected error while querying a user: %s", err)
+		} else {
+			t.Error("QueryUserByEmail does not work")
+		}
+	}
+
+	if foundUser, err := QueryUserByEmail(testdb, strings.ToUpper(refUserEmail)); foundUser == nil || err != nil {
+		if err != nil {
+			t.Errorf("Unexpected error while querying a user: %s", err)
+		} else {
+			t.Error("QueryUserByEmail does not ignore case differences as it should")
+		}
 	}
 
 	if err := DeleteUser(testdb, user); err != nil {

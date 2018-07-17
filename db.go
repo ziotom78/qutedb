@@ -32,6 +32,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/elithrar/simple-scrypt"
@@ -279,7 +280,11 @@ func CreateUser(db *gorm.DB, email string, password string, superuser bool) (*Us
 		return nil, err
 	}
 
-	user := User{Email: email, HashedPassword: hash, Superuser: superuser}
+	user := User{
+		Email:          strings.ToLower(email),
+		HashedPassword: hash,
+		Superuser:      superuser,
+	}
 	if err := db.Create(&user).Error; err != nil {
 		return nil, err
 	}
@@ -299,7 +304,7 @@ func DeleteUser(db *gorm.DB, user *User) error {
 // if a real error is occurred.
 func QueryUserByEmail(db *gorm.DB, email string) (*User, error) {
 	var user User
-	result := db.Where("Email = ?", email).First(&user)
+	result := db.Where("Email = ?", strings.ToLower(email)).First(&user)
 
 	if result.RecordNotFound() {
 		return nil, nil
