@@ -74,9 +74,41 @@ func homeHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 }
 
-func authenticateHandler(w http.ResponseWriter, r *http.Request) error {
-	r.ParseForm()
-	//user, _ := data.UserByUsername
+func loginHandler(w http.ResponseWriter, r *http.Request) error {
+	return generateHTML(w, []string{}, "layout", "public.navbar", "login")
+}
+
+func (app *App) authenticateHandler(w http.ResponseWriter, r *http.Request) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	user, err := QueryUserByEmail(app.db, r.PostFormValue("email"))
+	if err != nil {
+		return err
+	}
+
+	_, goodPasswd, err := CheckUserPassword(app.db, user.Email, r.PostFormValue("password"))
+	if err != nil {
+		return err
+	}
+	if !goodPasswd {
+		http.Redirect(w, r, "/login", 302)
+		return nil
+	}
+
+	session, err := CreateSession(app.db, user)
+	if err != nil {
+		return err
+	}
+	cookie := http.Cookie{
+		Name:     "_cookie",
+		Value:    session.UUID,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/", 302)
 
 	return nil
 }
@@ -331,7 +363,8 @@ func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) err
 
 func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/", app.handleErrWrap(homeHandler))
-	router.HandleFunc("/authenticate", app.handleErrWrap(authenticateHandler))
+	router.HandleFunc("/login", app.handleErrWrap(loginHandler))
+	router.HandleFunc("/authenticate", app.handleErrWrap(app.authenticateHandler))
 	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")
