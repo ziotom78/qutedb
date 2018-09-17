@@ -65,9 +65,18 @@ func generateHTML(w http.ResponseWriter, data interface{}, fn ...string) error {
 	return templates.ExecuteTemplate(w, "layout", data)
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) error {
-	//_, err := session(w, r)
-	if 1 != 0 {
+func (app *App) session(w http.ResponseWriter, r *http.Request) (*Session, error) {
+	cookie, err := r.Cookie("_cookie")
+	if err != nil {
+		return nil, err
+	}
+
+	return QuerySessionByUUID(app.db, cookie.String())
+}
+
+func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
+	session, _ := app.session(w, r)
+	if session == nil {
 		return generateHTML(w, []string{}, "layout", "public.navbar", "index")
 	} else {
 		return generateHTML(w, []string{}, "layout", "private.navbar", "index")
@@ -362,7 +371,7 @@ func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) err
 }
 
 func (app *App) initRouter(router *mux.Router) {
-	router.HandleFunc("/", app.handleErrWrap(homeHandler))
+	router.HandleFunc("/", app.handleErrWrap(app.homeHandler))
 	router.HandleFunc("/login", app.handleErrWrap(loginHandler))
 	router.HandleFunc("/authenticate", app.handleErrWrap(app.authenticateHandler))
 	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")

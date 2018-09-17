@@ -87,6 +87,27 @@ func TestSession(t *testing.T) {
 	if session.UserID != user.ID {
 		t.Fatalf("Mismatch in the session/user IDs: %d != %d", session.UserID, user.ID)
 	}
+
+	var newSession *Session
+	newSession, err = QuerySessionByUUID(testdb, session.UUID)
+	if newSession == nil {
+		t.Fatalf("Unable to retrieve an existing session from the DB")
+	}
+	if err != nil {
+		t.Fatalf("Unexpected error while querying an existing session: %v", err)
+	}
+
+	err = DeleteSession(testdb, session.UUID)
+	if err != nil {
+		t.Fatalf("Unexpected error while deleting an existing session: %v", err)
+	}
+
+	newSession, err = QuerySessionByUUID(testdb, session.UUID)
+	if newSession != nil {
+		t.Fatalf("I've just retrieved a non-existing session!")
+	} else if err != nil {
+		t.Fatalf("I wasn't expecting an error here: %v", err)
+	}
 }
 
 type ExpectedDir struct {

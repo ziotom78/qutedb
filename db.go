@@ -364,11 +364,29 @@ func CreateSession(db *gorm.DB, user *User) (*Session, error) {
 }
 
 // DeleteSession finds a session with a matching UUID in the database and
-// deletes it.
+// deletes it. If no session is found, returns silently without signaling
+// any error.
 func DeleteSession(db *gorm.DB, UUID string) error {
 	if err := db.Delete(Session{}, "UUID = ?", UUID).Error; err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// QuerySessionByUUID searches for an active session and returns a Session
+// object if found.
+func QuerySessionByUUID(db *gorm.DB, UUID string) (*Session, error) {
+	var session Session
+	result := db.Where("UUID = ?", UUID).First(&session)
+
+	if result.RecordNotFound() {
+		return nil, nil
+	}
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &session, nil
 }
