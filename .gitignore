@@ -20,3 +20,6 @@ db.sqlite3
 # Executables
 qutedb
 qutedb.exe
+
+# Other files
+*~
