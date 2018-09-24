@@ -49,6 +49,8 @@ in `config.json`. A few of them have sensible defaults, if no value is provided.
 
 | *Parameter*  | *Default* | *Meaning* |
 |--------------|-----------|-----------|
+| `cookie_hash_key` | None | Hash key used to encode session cookies. Should be 32 or 64 characters long |
+| `cookie_block_key` | None | Block key used to encode session cookies. Should be 32 or 64 characters long |
 | `log_format` | `"text"`    | Format of log messages. Possible values are `"text"` and `"json"` |
 | `log_output` | `"-"` | File where to write log messages. If equal to `"-"`, write to stderr; if `"--"`, write to stdout |
 | `log_level` | It depends    | Logging level. Possible values are `"error"`, `"warning"`, `"info"`, and `"debug"`, in increasing order of verbosity. The default is `"info"`, unless development mode is turned on |
@@ -71,7 +73,14 @@ corresponding keys in `config.json`:
 
 ## Authentication
 
-The code uses the "scrypt" encryption algorithm to hash users' passwords. See the article [Do not use sha256crypt/sha512crypt](https://pthree.org/2018/05/23/do-not-use-sha256crypt-sha512crypt-theyre-dangerous/) for the reasons behind this choice.
+The code uses the "scrypt" encryption algorithm to hash users'
+passwords. See the article [Do not use
+sha256crypt/sha512crypt](https://pthree.org/2018/05/23/do-not-use-sha256crypt-sha512crypt-theyre-dangerous/)
+for the reasons behind this choice.
+
+The first time the program is started, it will create a new superuser
+with name =admin@localhost= and password =changeme=. Please **change
+the password immediately**!
 
 ## License
 

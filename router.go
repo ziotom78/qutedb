@@ -71,7 +71,12 @@ func (app *App) session(w http.ResponseWriter, r *http.Request) (*Session, error
 		return nil, err
 	}
 
-	return QuerySessionByUUID(app.db, cookie.String())
+	var value string
+	if err = app.cookieEncoder.Decode("_cookie", cookie.Value, &value); err != nil {
+		return nil, err
+	}
+
+	return QuerySessionByUUID(app.db, value)
 }
 
 func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
@@ -98,6 +103,15 @@ func (app *App) authenticateHandler(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
+	if user == nil {
+		log.WithFields(log.Fields{
+			"email": r.PostFormValue("email"),
+		}).Info("User not found")
+
+		http.Redirect(w, r, "/login", 302)
+		return nil
+	}
+
 	_, goodPasswd, err := CheckUserPassword(app.db, user.Email, r.PostFormValue("password"))
 	if err != nil {
 		return err
@@ -111,9 +125,19 @@ func (app *App) authenticateHandler(w http.ResponseWriter, r *http.Request) erro
 	if err != nil {
 		return err
 	}
+
+	// Encode the cookie to prevent tampering
+	encoded, err := app.cookieEncoder.Encode("_cookie", session.UUID)
+	if err != nil {
+		return err
+	}
+
 	cookie := http.Cookie{
-		Name:     "_cookie",
-		Value:    session.UUID,
+		Name:  "_cookie",
+		Value: encoded,
+
+		// true means no scripts, HTTP/HTTPS requests only are
+		// allowed. This prevents cross-site scripting (XSS) attacks
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)

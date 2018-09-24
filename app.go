@@ -33,12 +33,15 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/gorilla/securecookie"
 )
 
 // An App is a structure which encapsulate the whole state of the application
 type App struct {
-	config *Configuration
-	db     *gorm.DB
+	config        *Configuration
+	db            *gorm.DB
+	cookieEncoder *securecookie.SecureCookie
 }
 
 // NewApp creates a new application and performs a number of initializations.
@@ -77,10 +80,27 @@ func NewApp() *App {
 		"configfile": config.ConfigurationFileName,
 	}).Info("Configuration has been read")
 
+	hashKey := config.CookieHashKey
+	blockKey := config.CookieBlockKey
+
 	return &App{
-		config: config,
-		db:     nil,
+		config:        config,
+		db:            nil,
+		cookieEncoder: securecookie.New(hashKey, blockKey),
 	}
+}
+
+// CreateDefaultUser creates a superuser with a standard password, if
+// no user exists.
+func (app *App) CreateDefaultUser() error {
+	var user User
+	result := app.db.First(&user)
+	if !result.RecordNotFound() {
+		return nil
+	}
+
+	_, err := CreateUser(app.db, "admin@localhost", "changeme", true)
+	return err
 }
 
 // Run opens the database and starts the main loop.
@@ -102,6 +122,11 @@ func (app *App) Run() {
 	}
 	app.db = db
 
+	// If no user exists, create a default superuser
+	if err := app.CreateDefaultUser(); err != nil {
+		log.Fatalf("Unable to create default user")
+	}
+
 	// Refresh the contents of the database
 	log.WithFields(log.Fields{
 		"repository": app.config.RepositoryPath,
@@ -118,6 +143,7 @@ func (app *App) Run() {
 	app.serve()
 }
 
+// Error contains information about an HTTP error
 type Error struct {
 	err  error
 	msg  string

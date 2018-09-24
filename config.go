@@ -52,6 +52,9 @@ type Configuration struct {
 	StaticPath string
 
 	RepositoryPath string
+
+	CookieHashKey  []byte
+	CookieBlockKey []byte
 }
 
 // configureViper sets up the Viper library so that it can read the
@@ -97,6 +100,20 @@ func configureViper() {
 func createConfiguration() *Configuration {
 	configureViper()
 
+	cookieHashKey := []byte(viper.GetString("cookie_hash_key"))
+	hashLen := len(cookieHashKey)
+	if hashLen != 32 && hashLen != 64 {
+		panic(fmt.Errorf("Invalid cookie hash key, the length is %d instead of 32/64",
+			hashLen))
+	}
+
+	cookieBlockKey := []byte(viper.GetString("cookie_block_key"))
+	blockLen := len(cookieBlockKey)
+	if blockLen != 32 && blockLen != 64 {
+		panic(fmt.Errorf("Invalid cookie block key, the length is %d instead of 32/64",
+			blockLen))
+	}
+
 	return &Configuration{
 		ConfigurationFileName: viper.ConfigFileUsed(),
 		DatabaseFile:          viper.GetString("database_file"),
@@ -109,5 +126,7 @@ func createConfiguration() *Configuration {
 		RepositoryPath:        viper.GetString("repository_path"),
 		ServerName:            viper.GetString("server_name"),
 		StaticPath:            viper.GetString("static_path"),
+		CookieHashKey:         cookieHashKey,
+		CookieBlockKey:        cookieBlockKey,
 	}
 }
