@@ -92,6 +92,19 @@ func loginHandler(w http.ResponseWriter, r *http.Request) error {
 	return generateHTML(w, []string{}, "layout", "public.navbar", "login")
 }
 
+func (app *App) logoutHandler(w http.ResponseWriter, r *http.Request) error {
+	session, _ := app.session(w, r)
+
+	// Do not bother checking for error messages here, as the user is
+	// logging out
+	_ = DeleteSession(app.db, session.UUID)
+
+	// We don't bother deleting the cookie: as long as it is invalid,
+	// keeping it in requests is the same as not having it anymore.
+	http.Redirect(w, r, "/", 302)
+	return nil
+}
+
 func (app *App) authenticateHandler(w http.ResponseWriter, r *http.Request) error {
 	err := r.ParseForm()
 	if err != nil {
@@ -397,6 +410,7 @@ func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) err
 func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/", app.handleErrWrap(app.homeHandler))
 	router.HandleFunc("/login", app.handleErrWrap(loginHandler))
+	router.HandleFunc("/logout", app.handleErrWrap(app.logoutHandler))
 	router.HandleFunc("/authenticate", app.handleErrWrap(app.authenticateHandler))
 	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
