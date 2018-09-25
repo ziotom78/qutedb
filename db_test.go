@@ -41,6 +41,31 @@ func TestUser(t *testing.T) {
 		t.Error("The password hash algorithm is accepting wrong passwords")
 	}
 
+	if foundUser, err := QueryUserByID(testdb, user.ID); foundUser == nil || err != nil || foundUser.ID != user.ID {
+		if err != nil {
+			t.Errorf("Unexpected error while querying a user: %s", err)
+		} else {
+			if foundUser.ID != user.ID {
+				t.Errorf("QueryUserByID returns an user with the wrong ID: %v != %v",
+					foundUser.ID, user.ID)
+			} else {
+				t.Error("QueryUserByID does not work")
+			}
+		}
+	}
+
+	userList, err := QueryAllUsers(testdb)
+	if err != nil {
+		t.Errorf("Unexpected error in QueryAllUsers: %v", err)
+	}
+	if len(userList) != 1 {
+		t.Errorf("Expected one user in the database, found %d", len(userList))
+	}
+	if userList[0].Email != refUserEmail {
+		t.Errorf("QueryAllUsers returned the wrong user: \"%s\" instead of \"%s\"",
+			userList[0].Email, refUserEmail)
+	}
+
 	if foundUser, err := QueryUserByEmail(testdb, refUserEmail); foundUser == nil || err != nil {
 		if err != nil {
 			t.Errorf("Unexpected error while querying a user: %s", err)

@@ -1,0 +1,15 @@
+{{ define "content" }}
+
+{{/* The value of {{ . }} in this template is an array of User objects. */}}
+
+<ul>
+  {{ range . }}
+  <li> {{ .Email }} (admin: {{ .Superuser }}) </li>
+  {{ end }}
+</ul>
+
+<p>
+  <a href="/createuser">Create new user</a>
+</p>
+
+{{ end }}

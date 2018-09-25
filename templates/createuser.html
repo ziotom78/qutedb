@@ -1,0 +1,19 @@
+{{ define "content" }}
+
+{{/* The value of {{ . }} in this template is nil. */}}
+
+<form class="form-signin center" role="form" action="/createuser/new" method="post">
+  <h2 class="form-signin-heading">
+    <i class="fa fa-comments-o">
+      Create new user
+    </i>
+  </h2>
+  <input type="email" name="email" class="form-control" placeholder="Email address" required autofocus>
+  <input type="password" name="password" class="form-control" placeholder="Password" required>
+  <input type="password" name="confirm-password" class="form-control" placeholder="Confirm password" required>
+  <input type="checkbox" name="superuser" class="form-control" required>Superuser</input>
+  <br/>
+  <button class="btn btn-lg btn-primary btn-block" type="submit">Create</button>
+</form>
+
+{{ end }}

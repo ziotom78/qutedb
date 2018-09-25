@@ -1,8 +1,18 @@
 {{ define "content" }}
 
+{{/* The value of {{ . }} in this template is either an User object or
+nil, depending whether the user is logged in or not. */}}
+
 <p class="lead">
-    Welcome! This site hosts the data acquired during the test campaign of the QUBIC instrument.
-    To navigate the site, you have to <a href="/login">login</a> first.
+  Welcome! This site hosts the data acquired during the test campaign of the QUBIC instrument.
+</p>
+
+<p>
+  {{ if . }}
+  User {{ .Email }} is logged in.
+  {{ else }}
+  To navigate the site, you have to <a href="/login">login</a> first.
+  {{ end }}
 </p>
 
 {{ end }}

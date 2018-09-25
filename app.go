@@ -61,7 +61,7 @@ func NewApp() *App {
 		if err != nil {
 			panic(fmt.Errorf("unable to create log file \"%s\": %s", config.LogOutput, err))
 		}
-		defer logfile.Close()
+		defer func() { _ = logfile.Close() }()
 
 		log.SetOutput(logfile)
 	}

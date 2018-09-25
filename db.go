@@ -298,6 +298,32 @@ func DeleteUser(db *gorm.DB, user *User) error {
 	return db.Unscoped().Delete(user).Error
 }
 
+// QueryUserByID searches in the database for an user with the
+// matching user ID and returns a pointer to a User structure. If the
+// user is not found, the pointer is nil. The "error" variable is set
+// to something else than nil only if a real error is occurred.
+func QueryUserByID(db *gorm.DB, userID uint) (*User, error) {
+	var user User
+	result := db.Where("ID = ?", userID).First(&user)
+
+	if result.RecordNotFound() {
+		return nil, nil
+	}
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &user, nil
+}
+
+// QueryAllUsers returns a list of all the users defined in the database
+func QueryAllUsers(db *gorm.DB) ([]User, error) {
+	var users []User
+	db.Order("Email").Find(&users)
+	return users, nil
+}
+
 // QueryUserByEmail searches in the database for an user with the matching email
 // and returns a poitner to a User structure. If the user is not found, the
 // pointer is nil. The "error" variable is set to something else than nil only

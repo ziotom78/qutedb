@@ -82,9 +82,16 @@ func (app *App) session(w http.ResponseWriter, r *http.Request) (*Session, error
 func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
 	session, _ := app.session(w, r)
 	if session == nil {
-		return generateHTML(w, []string{}, "layout", "public.navbar", "index")
+		return generateHTML(w, nil, "layout", "public.navbar", "index")
 	} else {
-		return generateHTML(w, []string{}, "layout", "private.navbar", "index")
+		user, err := QueryUserByID(app.db, session.UserID)
+		if err != nil {
+			return Error{
+				err: err,
+				msg: fmt.Sprintf("Unable to find user with ID %d", session.UserID),
+			}
+		}
+		return generateHTML(w, user, "layout", "private.navbar", "index")
 	}
 }
 
@@ -387,7 +394,8 @@ func (app *App) serve() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+func (app *App) handleErrWrap(f func(w http.ResponseWriter,
+	r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := f(w, r)
 		if err != nil {
@@ -407,11 +415,55 @@ func (app *App) handleErrWrap(f func(w http.ResponseWriter, r *http.Request) err
 	}
 }
 
+const (
+	// Page is allowed to all authenticated users
+	authNormal = iota
+
+	// Page is available only to users with administrative privileges
+	authAdmin
+)
+
+// forceAuth is a middleware that ensures that a page is accessed only
+// by users with specified privileges. The value of authLevel can be
+// either authNormal (all authenticated users can access the resource)
+// or authAdmin (only superusers can access the resource).
+func (app *App) forceAuth(f func(w http.ResponseWriter,
+	r *http.Request), authLevel int) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, _ := app.session(w, r)
+		if session == nil {
+			http.Redirect(w, r, "/", 401)
+		} else {
+			user, err := QueryUserByID(app.db, session.UserID)
+			if user == nil || err != nil || (authLevel == authAdmin && !user.Superuser) {
+				log.Error("This session doesn't have a valid user")
+				http.Redirect(w, r, "/", 404)
+			} else {
+				log.WithFields(log.Fields{
+					"user_email": user.Email,
+				}).Info("granting access to protected page")
+
+				f(w, r)
+			}
+		}
+	}
+}
+
 func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/", app.handleErrWrap(app.homeHandler))
 	router.HandleFunc("/login", app.handleErrWrap(loginHandler))
 	router.HandleFunc("/logout", app.handleErrWrap(app.logoutHandler))
 	router.HandleFunc("/authenticate", app.handleErrWrap(app.authenticateHandler))
+	router.HandleFunc("/usermod",
+		app.forceAuth(app.handleErrWrap(app.modifyUserHandler), authNormal))
+	router.HandleFunc("/userlist",
+		app.forceAuth(app.handleErrWrap(app.userListHandler), authAdmin))
+	router.HandleFunc("/createuser",
+		app.forceAuth(app.handleErrWrap(app.createUserHandler), authAdmin))
+	router.HandleFunc("/createuser/new",
+		app.forceAuth(app.handleErrWrap(app.createUser), authAdmin))
+
 	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")

@@ -1,0 +1,25 @@
+{{ define "content" }}
+
+{{/* The value of {{ . }} in this template is an User object. */}}
+
+<p>User: {{ .Email }}</p>
+
+<h2>Password change</h2>
+
+<form class="center" role="form" action="/changepassword" method="post">
+  <input type="password" name="old-password" class="form-control" placeholder="Current password" required>
+  <input type="password" name="password" class="form-control" placeholder="New password" required>
+  <input type="password" name="confirm-password" class="form-control" placeholder="Confirm new password" required>
+  <br/>
+  <button class="btn btn-lg btn-block" type="submit">Change password</button>
+</form>
+
+{{ if .Superuser }}
+<h2>User list administration</h2>
+
+<p>
+  <a href="/userlist">Add/remove/change other users.</a>
+</p>
+{{ end }}
+
+{{ end }}
