@@ -87,8 +87,9 @@ func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
 		user, err := QueryUserByID(app.db, session.UserID)
 		if err != nil {
 			return Error{
-				err: err,
-				msg: fmt.Sprintf("Unable to find user with ID %d", session.UserID),
+				err:  err,
+				msg:  fmt.Sprintf("Unable to find user with ID %d", session.UserID),
+				code: http.StatusInternalServerError,
 			}
 		}
 		return generateHTML(w, user, "layout", "private.navbar", "index")
@@ -405,6 +406,9 @@ func (app *App) handleErrWrap(f func(w http.ResponseWriter,
 				code = e.code
 				msg = e.msg
 			}
+			if code == 0 {
+				code = http.StatusInternalServerError
+			}
 			http.Error(w, err.Error(), code)
 			log.WithFields(log.Fields{
 				"handler": r.URL.Path,
@@ -457,6 +461,8 @@ func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/authenticate", app.handleErrWrap(app.authenticateHandler))
 	router.HandleFunc("/usermod",
 		app.forceAuth(app.handleErrWrap(app.modifyUserHandler), authNormal))
+	router.HandleFunc("/changepassword",
+		app.forceAuth(app.handleErrWrap(app.changeUserPassword), authNormal))
 	router.HandleFunc("/userlist",
 		app.forceAuth(app.handleErrWrap(app.userListHandler), authAdmin))
 	router.HandleFunc("/createuser",
@@ -464,12 +470,20 @@ func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/createuser/new",
 		app.forceAuth(app.handleErrWrap(app.createUser), authAdmin))
 
-	router.HandleFunc("/api/v1/acquisitions", app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}", app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata", app.handleErrWrap(app.rawListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}", app.handleErrWrap(app.rawFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata", app.handleErrWrap(app.sumListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}", app.handleErrWrap(app.sumFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/asichk", app.handleErrWrap(app.asicHkHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/externhk", app.handleErrWrap(app.externHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions",
+		app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}",
+		app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata",
+		app.handleErrWrap(app.rawListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}",
+		app.handleErrWrap(app.rawFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata",
+		app.handleErrWrap(app.sumListHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}",
+		app.handleErrWrap(app.sumFileHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/asichk",
+		app.handleErrWrap(app.asicHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/externhk",
+		app.handleErrWrap(app.externHkHandler)).Methods("GET")
 }

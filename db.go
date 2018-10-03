@@ -39,6 +39,7 @@ import (
 	"github.com/gobuffalo/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
+	log "github.com/sirupsen/logrus"
 )
 
 // An User is somebody which can have (read-only) access to the data
@@ -298,6 +299,20 @@ func DeleteUser(db *gorm.DB, user *User) error {
 	return db.Unscoped().Delete(user).Error
 }
 
+// UpdateUserPassword changes the password associated with a user
+func UpdateUserPassword(db *gorm.DB, user *User, newPassword string) error {
+	hash, err := scrypt.GenerateFromPassword([]byte(newPassword), scrypt.DefaultParams)
+	log.WithFields(log.Fields{
+		"user":     user,
+		"new_hash": hash,
+	}).Info("New password hash")
+	if err != nil {
+		return err
+	}
+
+	return db.Model(user).Update("hashedpassword", hash).Error
+}
+
 // QueryUserByID searches in the database for an user with the
 // matching user ID and returns a pointer to a User structure. If the
 // user is not found, the pointer is nil. The "error" variable is set
@@ -393,11 +408,7 @@ func CreateSession(db *gorm.DB, user *User) (*Session, error) {
 // deletes it. If no session is found, returns silently without signaling
 // any error.
 func DeleteSession(db *gorm.DB, UUID string) error {
-	if err := db.Delete(Session{}, "UUID = ?", UUID).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return db.Delete(Session{}, "UUID = ?", UUID).Error
 }
 
 // QuerySessionByUUID searches for an active session and returns a Session

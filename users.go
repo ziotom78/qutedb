@@ -27,9 +27,13 @@ THE SOFTWARE.
 
 package main
 
-import "net/http"
+import (
+	"net/http"
 
-func (app *App) modifyUserHandler(w http.ResponseWriter, r *http.Request) error {
+	log "github.com/sirupsen/logrus"
+)
+
+func (app *App) retrieveUserFromSession(w http.ResponseWriter, r *http.Request) *User {
 	session, _ := app.session(w, r)
 	if session == nil {
 		panic("No session available while accessing a reserved page")
@@ -40,13 +44,73 @@ func (app *App) modifyUserHandler(w http.ResponseWriter, r *http.Request) error 
 		panic("No user associated with an existing session")
 	}
 
+	return user
+}
+
+func (app *App) modifyUserHandler(w http.ResponseWriter, r *http.Request) error {
+	user := app.retrieveUserFromSession(w, r)
 	return generateHTML(w, user, "layout", "private.navbar", "usermod")
+}
+
+func (app *App) changeUserPassword(w http.ResponseWriter, r *http.Request) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	oldPassword := r.PostFormValue("old-password")
+	password := r.PostFormValue("password")
+	confirmPassword := r.PostFormValue("confirm-password")
+
+	user := app.retrieveUserFromSession(w, r)
+	if user != nil {
+		if password != confirmPassword {
+			return Error{
+				err:  nil,
+				msg:  "Passwords do not match",
+				code: http.StatusInternalServerError,
+			}
+		}
+
+		_, correctPwd, err := CheckUserPassword(
+			app.db,
+			user.Email,
+			oldPassword,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		if !correctPwd {
+			log.WithFields(log.Fields{
+				"user_email": user.Email,
+			}).Info("Invalid old password provided for password change")
+
+			http.Redirect(w, r, "/usermod", 302)
+			return nil
+		}
+
+		log.WithFields(log.Fields{
+			"user": user,
+		}).Info("Going to change user password")
+		err = UpdateUserPassword(app.db, user, password)
+		if err != nil {
+			return err
+		}
+	}
+
+	http.Redirect(w, r, "/", 302)
+	return nil
 }
 
 func (app *App) userListHandler(w http.ResponseWriter, r *http.Request) error {
 	userList, err := QueryAllUsers(app.db)
 	if err != nil {
-		return Error{err: err, msg: "Unable to retrieve the list of users"}
+		return Error{
+			err: err,
+			msg: "Unable to retrieve the list of users",
+		}
 	}
 
 	return generateHTML(w, userList, "layout", "private.navbar", "userlist")
@@ -58,12 +122,17 @@ func (app *App) createUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if r.PostFormValue("password") != r.PostFormValue("confirm-password") {
+	email := r.PostFormValue("email")
+	password := r.PostFormValue("password")
+	confirmPassword := r.PostFormValue("confirm-password")
+	superuser := r.PostFormValue("superuser") != ""
+
+	if password != confirmPassword {
 		return Error{err: err, msg: "Passwords do not match"}
 	}
 
 	// Check if an user with the given email already exists in the database
-	user, err := QueryUserByEmail(app.db, r.PostFormValue("email"))
+	user, err := QueryUserByEmail(app.db, email)
 	if err != nil {
 		return err
 	}
@@ -73,9 +142,9 @@ func (app *App) createUser(w http.ResponseWriter, r *http.Request) error {
 
 	user, err = CreateUser(
 		app.db,
-		r.PostFormValue("email"),
-		r.PostFormValue("password"),
-		r.PostFormValue("superuser") != "",
+		email,
+		password,
+		superuser,
 	)
 	if err != nil {
 		return err
