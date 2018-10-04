@@ -39,7 +39,7 @@ func TestHandleAcquisition(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -61,7 +61,7 @@ func TestHandleRawFiles(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035/rawdata", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/rawdata", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -87,7 +87,7 @@ func TestHandleRawFile(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035/rawdata/1", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/rawdata/1", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -111,7 +111,7 @@ func TestHandleSumFiles(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035/sumdata", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/sumdata", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -137,7 +137,7 @@ func TestHandleSumFile(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035/sumdata/1", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/sumdata/1", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -161,7 +161,7 @@ func TestAsicHkFile(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180406142035/asichk", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/asichk", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
@@ -185,7 +185,7 @@ func TestExternHkFile(t *testing.T) {
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/20180522152222/externhk", nil)
+	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-05-22T15:22:22/externhk", nil)
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {

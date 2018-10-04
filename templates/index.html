@@ -9,10 +9,56 @@ nil, depending whether the user is logged in or not. */}}
 
 <p>
   {{ if . }}
-  User {{ .Email }} is logged in.
+  User {{ .User.Email }} is logged in.
   {{ else }}
   To navigate the site, you have to <a href="/login">login</a> first.
   {{ end }}
 </p>
+
+{{ if . }}
+  <h2>List of tests</h2>
+  {{ if .AcquisitionList }}
+  <table class="table table-bordered table-hover">
+    <tr>
+      <th>Name</th>
+      <th>Acquisition</th>
+      <th>Raw files</th>
+      <th>Sum files</th>
+      <th>ASIC HK</th>
+      <th>Extern HK</th>
+      <th>Cryostat HK</th>
+    </tr>
+    {{ range .AcquisitionList }}
+    <tr>
+      <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">{{ .Name }}</a></td>
+      <td>{{ .AcquisitionTime }}</td>
+      <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/rawdata">Link</a></td>
+      <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/sumdata">Link</a></td>
+      <td>
+        {{ if .AsicHkFileName }}
+        <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk">Link</a>
+        {{ else }}
+        None
+        {{ end }}
+      </td>
+      <td>
+        {{ if .ExternHkFileName }}
+        <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk">Link</a>
+        {{ else }}
+        None
+        {{ end }}
+      </td>
+      <td>
+        N/A
+      </td>
+    </tr>
+    {{ end }}
+  </table>
+  {{ else }}
+  <p>
+    None found!
+  </p>
+  {{ end }}
+{{ end }}
 
 {{ end }}

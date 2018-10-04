@@ -79,21 +79,43 @@ func (app *App) session(w http.ResponseWriter, r *http.Request) (*Session, error
 	return QuerySessionByUUID(app.db, value)
 }
 
+// HomeData contains the data passed to the "index.html" template
+type HomeData struct {
+	User            User
+	AcquisitionList []Acquisition
+}
+
 func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
 	session, _ := app.session(w, r)
 	if session == nil {
 		return generateHTML(w, nil, "layout", "public.navbar", "index")
-	} else {
-		user, err := QueryUserByID(app.db, session.UserID)
-		if err != nil {
-			return Error{
-				err:  err,
-				msg:  fmt.Sprintf("Unable to find user with ID %d", session.UserID),
-				code: http.StatusInternalServerError,
-			}
-		}
-		return generateHTML(w, user, "layout", "private.navbar", "index")
 	}
+
+	user, err := QueryUserByID(app.db, session.UserID)
+	if err != nil {
+		return Error{
+			err:  err,
+			msg:  fmt.Sprintf("Unable to find user with ID %d", session.UserID),
+			code: http.StatusInternalServerError,
+		}
+	}
+
+	var acqList []Acquisition
+	if err := app.db.Find(&acqList).Error; err != nil {
+		return Error{
+			err:  err,
+			msg:  "Unable to retrieve list of acquisitions",
+			code: http.StatusInternalServerError,
+		}
+	}
+	log.WithFields(log.Fields{
+		"list_of_acquisitions": acqList,
+	}).Info("List of acquisitions going to be sent to index.html")
+
+	return generateHTML(w, HomeData{
+		User:            *user,
+		AcquisitionList: acqList,
+	}, "layout", "private.navbar", "index")
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) error {
@@ -472,18 +494,18 @@ func (app *App) initRouter(router *mux.Router) {
 
 	router.HandleFunc("/api/v1/acquisitions",
 		app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}",
 		app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/rawdata",
 		app.handleErrWrap(app.rawListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/rawdata/{asic_num:[0-9]+}",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/rawdata/{asic_num:[0-9]+}",
 		app.handleErrWrap(app.rawFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/sumdata",
 		app.handleErrWrap(app.sumListHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/sumdata/{asic_num:[0-9]+}",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/sumdata/{asic_num:[0-9]+}",
 		app.handleErrWrap(app.sumFileHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/asichk",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/asichk",
 		app.handleErrWrap(app.asicHkHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[0-9]+}/externhk",
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/externhk",
 		app.handleErrWrap(app.externHkHandler)).Methods("GET")
 }

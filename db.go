@@ -82,7 +82,7 @@ type Acquisition struct {
 	Name          string `json:"name"`
 	Directoryname string `json:"directory_name" gorm:"unique_index"`
 	// We encode the acquisition time as a string in order to have
-	// full control on the formatting, which is always "YYYYMMDDhhmmss"
+	// full control on the formatting, which is always "YYYY-MM-DDThh:mm:ss"
 	AcquisitionTime    string        `json:"acquisition_time"`
 	RawFiles           []RawDataFile `json:"-"`
 	SumFiles           []SumDataFile `json:"-"`
@@ -95,7 +95,7 @@ type Acquisition struct {
 // a string which is formatted according to the template "YYYYMMSShhmmss".
 // This is the format used in Acquisition.AcquisitionTime
 func TimeToCanonicalStr(t time.Time) string {
-	return fmt.Sprintf("%04d%02d%02d%02d%02d%02d",
+	return fmt.Sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
@@ -239,6 +239,10 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 		}
 	}
 
+	log.WithFields(log.Fields{
+		"new_acquisition": newacq,
+	}).Info("Going to create new acquisition")
+
 	if db.Create(&newacq).Error != nil {
 		return fmt.Errorf("Error while creating a new acquisition for \"%s\": %s",
 			folderPath, db.Error)
@@ -263,6 +267,10 @@ func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 			// Skip entries that are not real directories
 			continue
 		}
+
+		log.WithFields(log.Fields{
+			"folder_name": curfolder,
+		}).Info("Processing folder")
 
 		if err := refreshFolder(db, curfolder); err != nil {
 			return err
