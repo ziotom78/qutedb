@@ -21,5 +21,8 @@ db.sqlite3
 qutedb
 qutedb.exe
 
+# Configuration file
+config.json
+
 # Other files
 *~
