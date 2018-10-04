@@ -83,11 +83,11 @@ func configureViper() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.qutedb/")
 	if runtime.GOOS != "windows" {
 		viper.AddConfigPath("/etc/qutedb")
 	}
-	viper.AddConfigPath("$HOME/.qutedb/")
-	viper.AddConfigPath(".")
 
 	// Read the configuration
 	err := viper.ReadInConfig()
