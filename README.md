@@ -1,5 +1,3 @@
-**DISCONTINUED**: the development now happens at https://gitlab.in2p3.fr/tomasi/qutedb.
-
 # QuTeDB — The QUBIC Test Database
 
 [![Build Status](https://travis-ci.org/ziotom78/qutedb.svg?branch=master)](https://travis-ci.org/ziotom78/qutedb)
