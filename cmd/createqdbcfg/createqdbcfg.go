@@ -17,6 +17,12 @@ func main() {
 		"Length (in bytes) of the cookie hash key")
 	var blocklength = flag.Int("blocklength", 64,
 		"Length (in bytes) of the cookie block key")
+	var logoutput = flag.String("logoutput", "-",
+		"Where to save log messages, can be a filename, \"-\" (stdout) or \"--\" (stderr)")
+	var logformat = flag.String("logformat", "text",
+		"Format to use for logging, can be \"text\" or \"json\"")
+	var loglevel = flag.String("loglevel", "info",
+		"Log level, can be \"info\", \"warning\", or \"debug\"")
 	var staticpath = flag.String("staticpath", "./static",
 		"Path to the folder containing the static files to be served")
 	var repositorypath = flag.String("repositorypath", "./",
@@ -34,8 +40,9 @@ func main() {
 
 	conf := qdb.Configuration{
 		DatabaseFile:   *dbfile,
-		LogFormat:      "text",
-		LogLevel:       "info",
+		LogOutput:      *logoutput,
+		LogFormat:      *logformat,
+		LogLevel:       *loglevel,
 		PortNumber:     *portnum,
 		ServerName:     *servername,
 		StaticPath:     *staticpath,
