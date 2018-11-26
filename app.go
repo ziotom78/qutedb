@@ -97,10 +97,11 @@ func NewApp() *App {
 	configureLogging(config)
 
 	log.WithFields(log.Fields{
-		"GOOS":      runtime.GOOS,
-		"GOARCH":    runtime.GOARCH,
-		"COMPILER":  runtime.Compiler,
-		"log_level": log.GetLevel(),
+		"GOOS":           runtime.GOOS,
+		"GOARCH":         runtime.GOARCH,
+		"COMPILER":       runtime.Compiler,
+		"log_level":      log.GetLevel(),
+		"qutedb_version": QuteDBVersion,
 	}).Info("Starting the application")
 
 	log.WithFields(log.Fields{
