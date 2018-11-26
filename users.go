@@ -25,7 +25,7 @@ THE SOFTWARE.
 // This file includes the endpoints for HTTP requests related to user
 // management
 
-package main
+package qutedb
 
 import (
 	"net/http"

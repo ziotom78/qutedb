@@ -22,13 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-package main
+package qutedb
 
 import (
 	"fmt"
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
@@ -42,6 +43,32 @@ type App struct {
 	config        *Configuration
 	db            *gorm.DB
 	cookieEncoder *securecookie.SecureCookie
+}
+
+// configureLogging sets up the Logrus library in order to use the
+// desired format and verbosity level
+func configureLogging(config *Configuration) {
+	formatter := strings.ToLower(config.LogFormat)
+	switch formatter {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{})
+	case "text", "default":
+		log.SetFormatter(&log.TextFormatter{})
+	default:
+		panic(fmt.Errorf("unknown formatter: \"%s\"", formatter))
+	}
+
+	level := strings.ToLower(config.LogLevel)
+	switch level {
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	case "warn", "warning":
+		log.SetLevel(log.WarnLevel)
+	case "info", "default":
+		log.SetLevel(log.InfoLevel)
+	case "debug", "verbose":
+		log.SetLevel(log.DebugLevel)
+	}
 }
 
 // NewApp creates a new application and performs a number of initializations.

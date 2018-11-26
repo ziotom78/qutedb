@@ -25,39 +25,10 @@ THE SOFTWARE.
 package main
 
 import (
-	"fmt"
-	"strings"
-
-	log "github.com/sirupsen/logrus"
+	qdb "github.com/ziotom78/qutedb"
 )
 
 func main() {
-	app := NewApp()
+	app := qdb.NewApp()
 	app.Run()
-}
-
-// configureLogging sets up the Logrus library in order to use the
-// desired format and verbosity level
-func configureLogging(config *Configuration) {
-	formatter := strings.ToLower(config.LogFormat)
-	switch formatter {
-	case "json":
-		log.SetFormatter(&log.JSONFormatter{})
-	case "text", "default":
-		log.SetFormatter(&log.TextFormatter{})
-	default:
-		panic(fmt.Errorf("unknown formatter: \"%s\"", formatter))
-	}
-
-	level := strings.ToLower(config.LogLevel)
-	switch level {
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	case "warn", "warning":
-		log.SetLevel(log.WarnLevel)
-	case "info", "default":
-		log.SetLevel(log.InfoLevel)
-	case "debug", "verbose":
-		log.SetLevel(log.DebugLevel)
-	}
 }

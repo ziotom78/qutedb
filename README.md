@@ -25,6 +25,25 @@ in your path before downloading and compiling this library. This is usually the
 case on UNIX systems; if you are running Windows, you have to install *gcc*
 first (e.g., using the [scoop](https://scoop.sh/) package manager).
 
+
+## Installation
+
+To build and install the package in your `$GOPATH/bin` directory,
+install all the dependencies and run this command:
+
+    go install ./...
+    
+This will add the two executables `qutedb` and `createqdbcfg` in the
+`bin` directory of the `$GOPATH` folder.
+
+You must now create a configuration file. The `go install` command you
+just issued installed a small script called `createqdbcfg`. Run it,
+and it will print a default configuration to `stdout`. Save it into a
+file named `config.json`; this file can be kept either in the current
+directory or in `$HOME/.qutedb/`. Run `createqdbcfg --help` to get an
+help of the commands.
+
+
 ## Configuration
 
 All the configuration is specified through a file, `config.json`, which is read
@@ -34,6 +53,10 @@ from any of the following locations (in this order):
 2. The directory `.qutedb` within the home folder (i.e., `$HOME` on UNIX
    systems, `%USERPROFILE%` on Windows);
 3. The directory `/etc/qutedb` (only on UNIX systems)
+
+Use the program `createqdbcfg` to create a skeleton for this file; use
+`createqdbcfg --help` to get an help of a few parameters you can set
+from the command line.
 
 Here is an example of configuration file:
 
@@ -49,8 +72,8 @@ in `config.json`. A few of them have sensible defaults, if no value is provided.
 
 | *Parameter*  | *Default* | *Meaning* |
 |--------------|-----------|-----------|
-| `cookie_hash_key` | None | Hash key used to encode session cookies. Should be 32 or 64 characters long |
-| `cookie_block_key` | None | Block key used to encode session cookies. Should be 32 or 64 characters long |
+| `cookie_hash_key` | None | Hash key used to encode session cookies. It must be encoded using base64 encoding, and the unencoded string should be 32 or 64 characters long |
+| `cookie_block_key` | None | Block key used to encode session cookies. It must be encoded using base64 encoding, and the unencoded string should be 32 or 64 characters long |
 | `log_format` | `"text"`    | Format of log messages. Possible values are `"text"` and `"json"` |
 | `log_output` | `"-"` | File where to write log messages. If equal to `"-"`, write to stderr; if `"--"`, write to stdout |
 | `log_level` | It depends    | Logging level. Possible values are `"error"`, `"warning"`, `"info"`, and `"debug"`, in increasing order of verbosity. The default is `"info"`, unless development mode is turned on |

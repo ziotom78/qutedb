@@ -22,9 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-package main
+package qutedb
 
 import (
+	"encoding/base64"
 	"fmt"
 	"runtime"
 
@@ -35,26 +36,26 @@ import (
 // variables and configuration files. It is initialized using the Viper library.
 type Configuration struct {
 	// Full path of the file containing the configuration
-	ConfigurationFileName string
+	ConfigurationFileName string `json:"-"`
 
-	DatabaseFile string
+	DatabaseFile string `json:"database_file"`
 
-	LogFormat string
-	LogLevel  string
-	LogOutput string
+	LogFormat string `json:"log_format"`
+	LogLevel  string `json:"log_level"`
+	LogOutput string `json:"log_output"`
 
-	PortNumber int
-	ServerName string
+	PortNumber int    `json:"port_number"`
+	ServerName string `json:"server_name"`
 
-	ReadTimeout  int64
-	WriteTimeout int64
+	ReadTimeout  int64 `json:"read_timeout"`
+	WriteTimeout int64 `json:"write_timeout"`
 
-	StaticPath string
+	StaticPath string `json:"static_path"`
 
-	RepositoryPath string
+	RepositoryPath string `json:"repository_path"`
 
-	CookieHashKey  []byte
-	CookieBlockKey []byte
+	CookieHashKey  []byte `json:"cookie_hash_key"`
+	CookieBlockKey []byte `json:"cookie_block_key"`
 }
 
 // configureViper sets up the Viper library so that it can read the
@@ -100,14 +101,25 @@ func configureViper() {
 func createConfiguration() *Configuration {
 	configureViper()
 
-	cookieHashKey := []byte(viper.GetString("cookie_hash_key"))
+	var cookieHashKeyStr = viper.GetString("cookie_hash_key")
+	cookieHashKey, err := base64.StdEncoding.DecodeString(cookieHashKeyStr)
+	if err != nil {
+		panic(fmt.Errorf("Unable to decode cookie hash key \"%s\"",
+			cookieHashKeyStr))
+	}
 	hashLen := len(cookieHashKey)
 	if hashLen != 32 && hashLen != 64 {
 		panic(fmt.Errorf("Invalid cookie hash key, the length is %d instead of 32/64",
 			hashLen))
 	}
 
-	cookieBlockKey := []byte(viper.GetString("cookie_block_key"))
+	var cookieBlockKeyStr = viper.GetString("cookie_block_key")
+	cookieBlockKey, err := base64.StdEncoding.DecodeString(cookieHashKeyStr)
+	if err != nil {
+		panic(fmt.Errorf("Unable to decode cookie block key \"%s\"",
+			cookieBlockKeyStr))
+	}
+
 	blockLen := len(cookieBlockKey)
 	if blockLen != 32 && blockLen != 64 {
 		panic(fmt.Errorf("Invalid cookie block key, the length is %d instead of 32/64",
