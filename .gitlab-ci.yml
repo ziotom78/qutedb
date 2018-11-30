@@ -1,0 +1,16 @@
+stages:
+  - build
+  - test
+
+build:
+  image: golang:1.10
+  stage: build
+  script:
+    - go get -t -v ./...
+    - go build
+
+test:
+  image: golang:1.10
+  stage: test
+  script:
+    - go test -race
