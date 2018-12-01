@@ -1,29 +1,40 @@
-image: golang:1.10
+image: ziotom78/qutedb
 
 cache:
   paths:
     - /apt-cache
-    - /go/src/github.com
     - /go/src/golang.org
     - /go/src/google.golang.org
     - /go/src/gopkg.in
 
-before_script:
-  - mkdir -p /go/src/github.com/ziotom78 /go/src/_/builds
-  - cp -r $CI_PROJECT_DIR /go/src/github.com/ziotom78/qutedb
-  - ln -s /go/src/github.com/ziotom78 /go/src/_/builds/ziotom78
-
 stages:
   - build
   - test
+  - staging
+  - production
 
-build:
+install:
   stage: build
   script:
-    - go get -t -v ./...
-    - go build
+    - go get -v github.com/ziotom78/qutedb
 
-test:
+deps:
+  stage: build
+  script:
+    - go install -v ./...
+
+runtests:
   stage: test
   script:
     - go test -race
+
+staging:
+  stage: staging
+  script: # Todo: make /repository point to some meaningful location
+    - createdqbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
+
+run:
+  stage: production
+  script:
+    - qutedb
+
