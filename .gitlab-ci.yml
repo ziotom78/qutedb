@@ -1,16 +1,29 @@
+image: golang:1.10
+
+cache:
+  paths:
+    - /apt-cache
+    - /go/src/github.com
+    - /go/src/golang.org
+    - /go/src/google.golang.org
+    - /go/src/gopkg.in
+
+before_script:
+  - mkdir -p /go/src/github.com/ziotom78 /go/src/_/builds
+  - cp -r $CI_PROJECT_DIR /go/src/github.com/ziotom78/qutedb
+  - ln -s /go/src/github.com/ziotom78 /go/src/_/builds/ziotom78
+
 stages:
   - build
   - test
 
 build:
-  image: golang:1.10
   stage: build
   script:
     - go get -t -v ./...
     - go build
 
 test:
-  image: golang:1.10
   stage: test
   script:
     - go test -race
