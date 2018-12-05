@@ -33,7 +33,7 @@ build:
     - go get -v github.com/astrogo/fitsio
     - go install -v ./...
     - go test -race
-    - createdqbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
+    - createqdbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
 
 deploy:
   stage: production
