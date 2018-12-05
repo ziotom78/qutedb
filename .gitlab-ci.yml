@@ -1,4 +1,4 @@
-image: golang:1.10
+image: golang:1.11
 
 before_script:
   - apt-get update -y -qq
@@ -15,7 +15,6 @@ cache:
 
 stages:
   - build
-  - test
   - staging
   - production
 
@@ -31,10 +30,6 @@ deps:
     - pwd
     - go env
     - go install -v ./...
-
-runtests:
-  stage: test
-  script:
     - go test -race
 
 staging:
