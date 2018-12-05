@@ -21,6 +21,8 @@ install:
 deps:
   stage: build
   script:
+    - pwd
+    - go env
     - go install -v ./...
 
 runtests:
