@@ -22,8 +22,14 @@ build:
   script:
     - pwd
     - go env
-    - ls -l $GOPATH/src/github.com/ziotom78/qutedb/*
-    - ls -l /builds/tomasi/qutedb
+    - go get -v github.com/spf13/viper
+    - go get -v github.com/elithrar/simple-scrypt
+    - go get -v github.com/gobuffalo/uuid
+    - go get -v github.com/gorilla/mux
+    - go get -v github.com/gorilla/securecookie
+    - go get -v github.com/jinzhu/gorm
+    - go get -v github.com/mattn/go-sqlite3
+    - go get -v github.com/sirupsen/logrus
     - go install -v ./...
     - go test -race
     - createdqbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
