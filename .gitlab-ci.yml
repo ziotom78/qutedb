@@ -1,4 +1,4 @@
-image: ziotom78/qutedb
+image: golang:1.10
 
 before_script:
   - apt-get update -y -qq
@@ -22,7 +22,7 @@ stages:
 install:
   stage: build
   script:
-    - ls -l $GOPATH/src/github.com/ziotom78/qutedb
+    - ls -l $GOPATH/src/github.com/ziotom78/qutedb/*
     #- go get -v github.com/ziotom78/qutedb
 
 deps:
