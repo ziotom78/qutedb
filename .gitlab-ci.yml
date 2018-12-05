@@ -15,7 +15,6 @@ cache:
 
 stages:
   - build
-  - staging
   - production
 
 build:
@@ -24,15 +23,12 @@ build:
     - pwd
     - go env
     - ls -l $GOPATH/src/github.com/ziotom78/qutedb/*
+    - ls -l /builds/tomasi/qutedb
     - go install -v ./...
     - go test -race
-
-staging:
-  stage: staging
-  script: # Todo: make /repository point to some meaningful location
     - createdqbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
 
-production:
+deploy:
   stage: production
   script:
     - qutedb
