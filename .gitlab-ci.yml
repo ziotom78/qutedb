@@ -14,11 +14,10 @@ cache:
     - /go/src/gopkg.in
 
 stages:
-  - build
-  - production
+  - deploy
 
-build:
-  stage: build
+deploy:
+  stage: deploy
   script:
     - pwd
     - go env
@@ -34,9 +33,4 @@ build:
     - go install -v ./...
     - go test -race
     - createqdbcfg --staticpath /go/src/github.com/ziotom78/qutedb/static --repositorypath /repository --port 8080 | tee config.json
-
-deploy:
-  stage: production
-  script:
     - qutedb
-
