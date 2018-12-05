@@ -3,7 +3,7 @@ image: golang:1.11
 before_script:
   - apt-get update -y -qq
   - mkdir -p $GOPATH/src/github.com/ziotom78/qutedb
-  - ln -s /builds/tomasi/qutedb $GOPATH/src/github.com/ziotom78/qutedb
+  - ln -s /builds/tomasi/qutedb $GOPATH/src/github.com/ziotom78/
   - cd $GOPATH/src/github.com/ziotom78/qutedb
   
 cache:
