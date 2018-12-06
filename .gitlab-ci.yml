@@ -2,6 +2,7 @@ image: golang:1.11
 
 before_script:
   - apt-get update -y -qq
+  - apt-get install -y sqlite3 libsqlite3-dev
   - mkdir -p $GOPATH/src/github.com/ziotom78/
   - ln -s /builds/tomasi/qutedb $GOPATH/src/github.com/ziotom78/
   - cd $GOPATH/src/github.com/ziotom78/qutedb
