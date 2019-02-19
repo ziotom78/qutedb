@@ -13,9 +13,9 @@ import (
 )
 
 func main() {
-	var hashlength = flag.Int("hashlength", 64,
+	var hashlength = flag.Int("hashlength", 32,
 		"Length (in bytes) of the cookie hash key")
-	var blocklength = flag.Int("blocklength", 64,
+	var blocklength = flag.Int("blocklength", 32,
 		"Length (in bytes) of the cookie block key")
 	var logoutput = flag.String("logoutput", "-",
 		"Where to save log messages, can be a filename, \"-\" (stdout) or \"--\" (stderr)")
