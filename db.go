@@ -271,7 +271,7 @@ func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 			return nil
 		}
 
-		matched, err := filepath.Match("????-??-??_??.??.??__*", path)
+		matched, err := filepath.Match("????-??-??_??.??.??__*", filepath.Base(path))
 		if err != nil {
 			return err
 		}
