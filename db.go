@@ -254,30 +254,43 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 // RefreshDbContents scans the repository for any file that is missing from the
 // database, and create an entry for each of them.
 func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
-	folders, err := filepath.Glob(filepath.Join(repositoryPath, "????-??-??_??.??.??__*"))
-	if err != nil {
-		return err
-	}
-
-	// Keep all the files sorted lexicographically
-	sort.Strings(folders)
-
-	for _, curfolder := range folders {
-		if fi, err := os.Stat(curfolder); err != nil || !fi.Mode().IsDir() {
-			// Skip entries that are not real directories
-			continue
+	return filepath.Walk(repositoryPath, func(
+		path string,
+		info os.FileInfo,
+		err error,
+	) error {
+		if err != nil {
+			return err
 		}
 
 		log.WithFields(log.Fields{
-			"folder_name": curfolder,
-		}).Info("Processing folder")
+			"folder_name": path,
+		}).Debug("Walking into directory")
 
-		if err := refreshFolder(db, curfolder); err != nil {
+		if !info.IsDir() {
+			return nil
+		}
+
+		matched, err := filepath.Match("????-??-??_??.??.??__*", path)
+		if err != nil {
 			return err
 		}
-	}
 
-	return nil
+		if matched {
+			log.WithFields(log.Fields{
+				"folder_name": path,
+			}).Info("Processing folder")
+
+			if err := refreshFolder(db, path); err != nil {
+				return err
+			}
+
+			// This directory has been processed, so don't walk into it
+			return filepath.SkipDir
+		}
+
+		return nil
+	})
 }
 
 // CreateUser creates a new "User" object and initializes it with the hash of
