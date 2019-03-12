@@ -109,7 +109,7 @@ func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	log.WithFields(log.Fields{
-		"list_of_acquisitions": acqList,
+		"num_of_acquisitions": len(acqList),
 	}).Info("List of acquisitions going to be sent to index.html")
 
 	return generateHTML(w, HomeData{

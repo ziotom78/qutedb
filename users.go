@@ -92,7 +92,7 @@ func (app *App) changeUserPassword(w http.ResponseWriter, r *http.Request) error
 		}
 
 		log.WithFields(log.Fields{
-			"user": user,
+			"user": user.Email,
 		}).Info("Going to change user password")
 		err = UpdateUserPassword(app.db, user, password)
 		if err != nil {

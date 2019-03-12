@@ -324,14 +324,14 @@ func DeleteUser(db *gorm.DB, user *User) error {
 func UpdateUserPassword(db *gorm.DB, user *User, newPassword string) error {
 	hash, err := scrypt.GenerateFromPassword([]byte(newPassword), scrypt.DefaultParams)
 	log.WithFields(log.Fields{
-		"user":     user,
-		"new_hash": hash,
+		"user":     user.Email,
+		"new_hash": string(hash),
 	}).Info("New password hash")
 	if err != nil {
 		return err
 	}
 
-	return db.Model(user).Update("hashedpassword", hash).Error
+	return db.Model(user).Update("hashed_password", hash).Error
 }
 
 // QueryUserByID searches in the database for an user with the
