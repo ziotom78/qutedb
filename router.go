@@ -101,7 +101,7 @@ func (app *App) homeHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	var acqList []Acquisition
-	if err := app.db.Find(&acqList).Error; err != nil {
+	if err := app.db.Order("acquisition_time desc").Find(&acqList).Error; err != nil {
 		return Error{
 			err:  err,
 			msg:  "Unable to retrieve list of acquisitions",
@@ -194,7 +194,7 @@ func (app *App) acquisitionListHandler(w http.ResponseWriter, r *http.Request) e
 	if app == nil {
 		panic("app cannot be nil")
 	}
-	if err := app.db.Find(&acq).Error; err != nil {
+	if err := app.db.Order("acquisition_time desc").Find(&acq).Error; err != nil {
 		return Error{err: err, msg: "Unable to query the database"}
 	}
 
