@@ -102,7 +102,7 @@ sha256crypt/sha512crypt](https://pthree.org/2018/05/23/do-not-use-sha256crypt-sh
 for the reasons behind this choice.
 
 The first time the program is started, it will create a new superuser
-with name =admin@localhost= and password =changeme=. Please **change
+with name `admin@localhost` and password `changeme`. Please **change
 the password immediately**!
 
 ## License
