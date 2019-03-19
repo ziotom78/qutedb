@@ -48,14 +48,14 @@ nil, depending whether the user is logged in or not. */}}
         <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/sumdata">Link</a></td>
         <td>
           {{ if .AsicHkFileName }}
-          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk">Link</a>
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk" download="{{ .AcquisitionTime }}_asic.fits">Download</a>
           {{ else }}
           None
           {{ end }}
         </td>
         <td>
           {{ if .ExternHkFileName }}
-          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk">Link</a>
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk" download="{{ .AcquisitionTime }}_exthk.fits">Download</a>
           {{ else }}
           None
           {{ end }}
