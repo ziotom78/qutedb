@@ -40,6 +40,7 @@ func TestHandleAcquisition(t *testing.T) {
 
 	writer := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35", nil)
+	request.Header.Set("Accept", "application/json")
 	router.ServeHTTP(writer, request)
 
 	if writer.Code != 200 {
