@@ -131,6 +131,16 @@ func (app *App) CreateDefaultUser() error {
 	return err
 }
 
+func (app *App) refresh(db *gorm.DB) {
+	// Refresh the contents of the database
+	log.WithFields(log.Fields{
+		"repository": app.config.RepositoryPath,
+	}).Info("Refreshing the database")
+	if err := RefreshDbContents(db, app.config.RepositoryPath); err != nil {
+		panic(fmt.Sprintf("Unable to refresh the database: %s", err))
+	}
+}
+
 // Run opens the database and starts the main loop.
 func (app *App) Run() {
 	log.WithFields(log.Fields{
@@ -155,13 +165,7 @@ func (app *App) Run() {
 		log.Fatalf("Unable to create default user")
 	}
 
-	// Refresh the contents of the database
-	log.WithFields(log.Fields{
-		"repository": app.config.RepositoryPath,
-	}).Info("Refreshing the database")
-	if err := RefreshDbContents(db, app.config.RepositoryPath); err != nil {
-		panic(fmt.Sprintf("Unable to refresh the database: %s", err))
-	}
+	app.refresh(db)
 
 	log.WithFields(log.Fields{
 		"server":      app.config.ServerName,

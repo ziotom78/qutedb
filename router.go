@@ -205,6 +205,7 @@ func (app *App) acquisitionListHandler(w http.ResponseWriter, r *http.Request) e
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+
 	return nil
 }
 
@@ -213,21 +214,56 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 		panic("app cannot be nil")
 	}
 
+	log.WithFields(log.Fields{
+		"accept": r.Header.Get("Accept"),
+	}).Info("acquisitionHandler")
+
 	vars := mux.Vars(r)
 	var acq Acquisition
-	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
-			vars["acq_id"])}
+	if err := app.db.
+		Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+				vars["acq_id"]),
+		}
 	}
 
-	data, err := json.Marshal(acq)
-	if err != nil {
-		return Error{err: err, msg: "Unable to encode the acquisition"}
+	if err := app.db.
+		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.RawFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for raw files belonging to ID %s",
+				vars["acq_id"]),
+		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
-	return nil
+	if err := app.db.
+		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.SumFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for science files belonging to ID %s",
+				vars["acq_id"]),
+		}
+	}
+
+	if r.Header.Get("Accept") == "application/json" {
+		data, err := json.Marshal(acq)
+		if err != nil {
+			return Error{err: err, msg: "Unable to encode the acquisition"}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+
+		return nil
+	}
+
+	return generateHTML(w, acq, "layout", "private.navbar", "acquisition")
 }
 
 func (app *App) rawListHandler(w http.ResponseWriter, r *http.Request) error {
@@ -237,11 +273,14 @@ func (app *App) rawListHandler(w http.ResponseWriter, r *http.Request) error {
 
 	vars := mux.Vars(r)
 	var rawFiles []RawDataFile
-	if err := app.db.Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
-		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).Find(&rawFiles).Error; err != nil {
+	if err := app.db.
+		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).
+		Find(&rawFiles).Error; err != nil {
 		return Error{
 			err: err,
-			msg: fmt.Sprintf("Unable to query the database for raw files belonging to ID %s", vars["acq_id"]),
+			msg: fmt.Sprintf("Unable to query for raw files belonging to ID %s",
+				vars["acq_id"]),
 		}
 	}
 
@@ -263,12 +302,14 @@ func (app *App) rawFileHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var rawFiles []RawDataFile
-	if err := app.db.Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+	if err := app.db.
+		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
 		Where("acquisitions.acquisition_time = ? AND asic_number = ?",
-			vars["acq_id"], asicNumber).Find(&rawFiles).Error; err != nil {
+			vars["acq_id"], asicNumber).
+		Find(&rawFiles).Error; err != nil {
 		return Error{
 			err: err,
-			msg: fmt.Sprintf("Unable to query the database for raw file (ASIC %d) belonging to ID %s",
+			msg: fmt.Sprintf("Unable to query for raw file (ASIC %d) belonging to ID %s",
 				asicNumber, vars["acq_id"],
 			),
 		}
@@ -295,9 +336,14 @@ func (app *App) sumListHandler(w http.ResponseWriter, r *http.Request) error {
 
 	vars := mux.Vars(r)
 	var sumFiles []SumDataFile
-	if err := app.db.Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
-		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).Find(&sumFiles).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for science files belonging to ID %s", vars["acq_id"])}
+	if err := app.db.
+		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.acquisition_time = ?", vars["acq_id"]).
+		Find(&sumFiles).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for science files belonging to ID %s",
+				vars["acq_id"])}
 	}
 
 	data, err := json.Marshal(sumFiles)
@@ -318,12 +364,14 @@ func (app *App) sumFileHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	asicNumber, _ := strconv.Atoi(vars["asic_num"])
 	var sumFiles []SumDataFile
-	if err := app.db.Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+	if err := app.db.
+		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
 		Where("acquisitions.acquisition_time = ? AND asic_number = ?",
-			vars["acq_id"], asicNumber).Find(&sumFiles).Error; err != nil {
+			vars["acq_id"], asicNumber).
+		Find(&sumFiles).Error; err != nil {
 		return Error{
 			err: err,
-			msg: fmt.Sprintf("Unable to query the database for science file (ASIC %d) belonging to ID %s",
+			msg: fmt.Sprintf("Unable to query for science file (ASIC %d) belonging to ID %s",
 				asicNumber, vars["acq_id"],
 			),
 		}
@@ -350,19 +398,29 @@ func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
 
 	vars := mux.Vars(r)
 	var acq Acquisition
-	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
-			vars["acq_id"])}
+	if err := app.db.
+		Where("acquisition_time = ?", vars["acq_id"]).
+		First(&acq).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
+				vars["acq_id"])}
 	}
 
 	fitsfile, err := os.Open(acq.AsicHkFileName)
 	if err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.AsicHkFileName)}
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.AsicHkFileName),
+		}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		return Error{err: err, msg: "Unable to send the FITS file"}
+		return Error{
+			err: err,
+			msg: "Unable to send the FITS file",
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/fits")
@@ -376,14 +434,23 @@ func (app *App) externHkHandler(w http.ResponseWriter, r *http.Request) error {
 
 	vars := mux.Vars(r)
 	var acq Acquisition
-	if err := app.db.Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
-			vars["acq_id"])}
+	if err := app.db.
+		Where("acquisition_time = ?", vars["acq_id"]).
+		First(&acq).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
+				vars["acq_id"]),
+		}
 	}
 
 	fitsfile, err := os.Open(acq.ExternHkFileName)
 	if err != nil {
-		return Error{err: err, msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.ExternHkFileName)}
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to retrieve the FITS file %q",
+				acq.ExternHkFileName),
+		}
 	}
 	defer fitsfile.Close()
 

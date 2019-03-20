@@ -217,25 +217,44 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	// once the mask for their files is finalized
 
 	asicRe := regexp.MustCompile("asic([0-9]+)")
-	if rawFiles, err := findMultipleFiles(RawDirName(folderPath), "raw-asic*-????.??.??.??????.fits"); err == nil && len(rawFiles) > 0 {
+	if rawFiles, err := findMultipleFiles(
+		RawDirName(folderPath),
+		"raw-asic*-????.??.??.??????.fits",
+	); err == nil && len(rawFiles) > 0 {
 		for _, filename := range rawFiles {
 			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
 			asicNum, err := strconv.Atoi(matches[1])
 			if err != nil {
 				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
 			}
-			newacq.RawFiles = append(newacq.RawFiles, RawDataFile{FileName: filename, AsicNumber: asicNum})
+			newacq.RawFiles = append(
+				newacq.RawFiles,
+				RawDataFile{
+					FileName:   filename,
+					AsicNumber: asicNum,
+				},
+			)
 		}
 	}
 
-	if sumFiles, err := findMultipleFiles(SumDirName(folderPath), "science-asic*-????.??.??.??????.fits"); err == nil && len(sumFiles) > 0 {
+	if sumFiles, err := findMultipleFiles(
+		SumDirName(folderPath),
+		"science-asic*-????.??.??.??????.fits",
+	); err == nil && len(sumFiles) > 0 {
 		for _, filename := range sumFiles {
 			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
 			asicNum, err := strconv.Atoi(matches[1])
 			if err != nil {
-				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
+				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s",
+					matches[1], err))
 			}
-			newacq.SumFiles = append(newacq.SumFiles, SumDataFile{FileName: filename, AsicNumber: asicNum})
+			newacq.SumFiles = append(
+				newacq.SumFiles,
+				SumDataFile{
+					FileName:   filename,
+					AsicNumber: asicNum,
+				},
+			)
 		}
 	}
 
@@ -296,7 +315,13 @@ func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 // CreateUser creates a new "User" object and initializes it with the hash of
 // the password and the other parameters as well. The new object is saved in the
 // database.
-func CreateUser(db *gorm.DB, email string, password string, superuser bool) (*User, error) {
+func CreateUser(
+	db *gorm.DB,
+	email string,
+	password string,
+	superuser bool,
+) (*User, error) {
+
 	hash, err := scrypt.GenerateFromPassword([]byte(password), scrypt.DefaultParams)
 	if err != nil {
 		return nil, err
