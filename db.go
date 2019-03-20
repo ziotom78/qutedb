@@ -473,3 +473,41 @@ func QuerySessionByUUID(db *gorm.DB, UUID string) (*Session, error) {
 
 	return &session, nil
 }
+
+// QueryAcquisition returns an Aquisition object with all its fields
+// properly filled
+func QueryAcquisition(db *gorm.DB, acqtime string) (*Acquisition, error) {
+	var acq Acquisition
+	if err := db.
+		Where("acquisition_time = ?", acqtime).First(&acq).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+				acqtime),
+		}
+	}
+
+	if err := db.
+		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.RawFiles).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for raw files belonging to ID %s",
+				acqtime),
+		}
+	}
+
+	if err := db.
+		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.SumFiles).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for science files belonging to ID %s",
+				acqtime),
+		}
+	}
+
+	return &acq, nil
+}

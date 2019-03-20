@@ -219,34 +219,11 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 	}).Info("acquisitionHandler")
 
 	vars := mux.Vars(r)
-	var acq Acquisition
-	if err := app.db.
-		Where("acquisition_time = ?", vars["acq_id"]).First(&acq).Error; err != nil {
+	acq, err := QueryAcquisition(app.db, vars["acq_id"])
+	if err != nil {
 		return Error{
 			err: err,
 			msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
-				vars["acq_id"]),
-		}
-	}
-
-	if err := app.db.
-		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
-		Where("acquisitions.id = ?", acq.ID).
-		Find(&acq.RawFiles).Error; err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to query for raw files belonging to ID %s",
-				vars["acq_id"]),
-		}
-	}
-
-	if err := app.db.
-		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
-		Where("acquisitions.id = ?", acq.ID).
-		Find(&acq.SumFiles).Error; err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to query for science files belonging to ID %s",
 				vars["acq_id"]),
 		}
 	}
