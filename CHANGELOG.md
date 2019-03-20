@@ -1,3 +1,8 @@
+# 0.2.0
+
+- Force download of FITS files, instead of loading them manually
+- Implement dedicated page for tests
+
 # 0.1.1
 
 - Fix bug #2
