@@ -53,12 +53,26 @@
   <li>No external housekeeping file</li>
   {{ end }}
 
-  {{ if .CryostatHkFileName }}
+  {{ if .MmrHkFileName }}
   <li>
-    Impossible!
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mmrhk"
+       download="{{ .MmrHkFileName }}">
+      MMR Housekeeping
+    </a>
   </li>
   {{ else }}
-  <li>No cryostat housekeeping file</li>
+  <li>No MMR housekeeping file</li>
+  {{ end }}
+
+  {{ if .MgcHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mgchk"
+       download="{{ .MgcHkFileName }}">
+      MGC Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No MGC housekeeping file</li>
   {{ end }}
 </ul>
 

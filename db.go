@@ -83,13 +83,14 @@ type Acquisition struct {
 	Directoryname string `json:"directory_name" gorm:"unique_index"`
 	// We encode the acquisition time as a string in order to have
 	// full control on the formatting, which is always "YYYY-MM-DDThh:mm:ss"
-	AcquisitionTime    string        `json:"acquisition_time"`
-	RawFiles           []RawDataFile `json:"-"`
-	SumFiles           []SumDataFile `json:"-"`
-	AsicHkFileName     string        `json:"-"`
-	InternHkFileName   string        `json:"-"`
-	ExternHkFileName   string        `json:"-"`
-	CryostatHkFileName string        `json:"-"`
+	AcquisitionTime  string        `json:"acquisition_time"`
+	RawFiles         []RawDataFile `json:"-"`
+	SumFiles         []SumDataFile `json:"-"`
+	AsicHkFileName   string        `json:"-"`
+	InternHkFileName string        `json:"-"`
+	ExternHkFileName string        `json:"-"`
+	MmrHkFileName    string        `json:"-"`
+	MgcHkFileName    string        `json:"-"`
 }
 
 // TimeToCanonicalStr converts a standard date/time into
@@ -223,8 +224,21 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 		newacq.ExternHkFileName = filename
 	}
 
-	// TODO: Cryostat thermometers will need to be considered at this point,
-	// once the mask for their files is finalized
+	filename, err = findOneMatchingFile(hkDir, "hk-MGC-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.MgcHkFileName = filename
+	}
+
+	filename, err = findOneMatchingFile(hkDir, "hk-MMR-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.MmrHkFileName = filename
+	}
 
 	asicRe := regexp.MustCompile("asic([0-9]+)")
 	if rawFiles, err := findMultipleFiles(

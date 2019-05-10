@@ -37,7 +37,9 @@ nil, depending whether the user is logged in or not. */}}
         <th>ASIC HK</th>
         <th>Intern HK</th>
         <th>Extern HK</th>
-        <th>Cryostat HK</th>
+        <th>MMR HK</th>
+        <th>MGC HK</th>
+        <th>Bundle</th>
       </tr>
     </thead>
     <tbody>
@@ -69,7 +71,21 @@ nil, depending whether the user is logged in or not. */}}
           {{ end }}
         </td>
         <td>
-          N/A
+          {{ if .MmrHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mmrhk" download="{{ .AcquisitionTime }}_mmrhk.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .MgcHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mgchk" download="{{ .AcquisitionTime }}_mgchk.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          Not implemented yet
         </td>
       </tr>
       {{ end }}

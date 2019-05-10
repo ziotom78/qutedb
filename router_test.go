@@ -157,74 +157,53 @@ func TestHandleSumFile(t *testing.T) {
 	}
 }
 
-func TestAsicHkFile(t *testing.T) {
+func runTestOnHkFile(t *testing.T, url string, expectedDate string) {
 	router := mux.NewRouter()
 	app.initRouter(router)
 
 	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-04-06T14:20:35/asichk", nil)
+
+	request, err := http.NewRequest("GET", url+"_doesnotexist", nil)
+	if err != nil {
+		t.Errorf("Unable to create test request: %v", err)
+	}
+	router.ServeHTTP(writer, request)
+	if writer.Result().StatusCode != 404 {
+		t.Errorf("Response code for non-existing URL is %v instead of 404", writer.Code)
+	}
+
+	request, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Errorf("Unable to create test request: %v", err)
+	}
+
+	writer = httptest.NewRecorder()
 	router.ServeHTTP(writer, request)
 
-	if writer.Code != 200 {
-		t.Errorf("Response code is %v", writer.Code)
-	}
+	if writer.Result().StatusCode != 200 {
+		t.Errorf("Response code is %v instead of 200 for URL %v", writer.Code, url)
+	} else {
+		f, err := fitsio.Open(writer.Body)
+		if err != nil {
+			t.Errorf("Unable to decode FITS file: %s", err)
+		}
+		defer f.Close()
 
-	f, err := fitsio.Open(writer.Body)
-	if err != nil {
-		t.Errorf("Unable to decode FITS file: %s", err)
+		if f.HDU(1).Header().Get("DATE").Value != expectedDate {
+			t.Errorf("Wrong value for DATE in FITS file: %s",
+				f.HDU(1).Header().Get("DATE").Value)
+		}
 	}
-	defer f.Close()
+}
 
-	if f.HDU(1).Header().Get("DATE").Value != "2018-04-06 14:20:35" {
-		t.Errorf("Wrong value for DATE in FITS file: %s",
-			f.HDU(1).Header().Get("DATE").Value)
-	}
+func TestAsicHkFile(t *testing.T) {
+	runTestOnHkFile(t, "/api/v1/acquisitions/2018-04-06T14:20:35/asichk", "2018-04-06 14:20:35")
 }
 
 func TestInternHkFile(t *testing.T) {
-	router := mux.NewRouter()
-	app.initRouter(router)
-
-	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2019-05-07T18:11:29/internhk", nil)
-	router.ServeHTTP(writer, request)
-
-	if writer.Code != 200 {
-		t.Errorf("Response code is %v", writer.Code)
-	}
-
-	f, err := fitsio.Open(writer.Body)
-	if err != nil {
-		t.Errorf("Unable to decode FITS file: %s", err)
-	}
-	defer f.Close()
-
-	if f.HDU(1).Header().Get("DATE").Value != "2019-05-07 18:11:29" {
-		t.Errorf("Wrong value for DATE in FITS file: %s",
-			f.HDU(1).Header().Get("DATE").Value)
-	}
+	runTestOnHkFile(t, "/api/v1/acquisitions/2019-05-07T18:11:29/internhk", "2019-05-07 18:11:29")
 }
 
 func TestExternHkFile(t *testing.T) {
-	router := mux.NewRouter()
-	app.initRouter(router)
-
-	writer := httptest.NewRecorder()
-	request, _ := http.NewRequest("GET", "/api/v1/acquisitions/2018-05-22T15:22:22/externhk", nil)
-	router.ServeHTTP(writer, request)
-
-	if writer.Code != 200 {
-		t.Errorf("Response code is %v", writer.Code)
-	}
-
-	f, err := fitsio.Open(writer.Body)
-	if err != nil {
-		t.Errorf("Unable to decode FITS file: %s", err)
-	}
-	defer f.Close()
-
-	if f.HDU(1).Header().Get("DATE").Value != "2018-05-22 13:22:22" {
-		t.Errorf("Wrong value for DATE in FITS file: %s",
-			f.HDU(1).Header().Get("DATE").Value)
-	}
+	runTestOnHkFile(t, "/api/v1/acquisitions/2019-05-07T18:11:29/externhk", "2019-05-07 18:11:29")
 }

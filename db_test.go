@@ -142,7 +142,10 @@ type ExpectedDir struct {
 	NumOfRawFiles   int
 	NumOfSumFiles   int
 	AsicsHkPresent  bool
+	InternHkPresent bool
 	ExternHkPresent bool
+	MmrHkPresent    bool
+	MgcHkPresent    bool
 }
 
 func TestRefresh(t *testing.T) {
@@ -188,6 +191,17 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+		},
+		{
+			Name:            "RF_switch_cont_13_34",
+			DirName:         "2019-05-07_18.11.29__RF_switch_cont_13_34",
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2019, 5, 7, 18, 11, 29, 0, time.UTC)),
+			NumOfRawFiles:   2,
+			NumOfSumFiles:   2,
+			InternHkPresent: true,
+			ExternHkPresent: true,
+			MmrHkPresent:    true,
+			MgcHkPresent:    true,
 		},
 	}
 	for _, dir := range expecteddirs {
@@ -239,10 +253,21 @@ func TestRefresh(t *testing.T) {
 			t.Fatalf("ASIC HK file for \"%s\" not found", dir.Name)
 		}
 
+		if dir.InternHkPresent && acq.InternHkFileName == "" {
+			t.Fatalf("Internal HK file for \"%s\" not found", dir.Name)
+		}
+
 		if dir.ExternHkPresent && acq.ExternHkFileName == "" {
 			t.Fatalf("External HK file for \"%s\" not found", dir.Name)
 		}
 
+		if dir.MmrHkPresent && acq.MmrHkFileName == "" {
+			t.Fatalf("MMR HK file for \"%s\" not found", dir.Name)
+		}
+
+		if dir.MgcHkPresent && acq.MgcHkFileName == "" {
+			t.Fatalf("MGC HK file for \"%s\" not found", dir.Name)
+		}
 	}
 }
 

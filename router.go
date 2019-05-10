@@ -368,12 +368,16 @@ func (app *App) sumFileHandler(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
+func (app *App) genericHkHandler(w http.ResponseWriter, r *http.Request, getFileName func(*Acquisition) string) error {
 	if app == nil {
 		panic("app cannot be nil")
 	}
 
 	vars := mux.Vars(r)
+	log.WithFields(log.Fields{
+		"acq_id": vars["acq_id"],
+	}).Debug("REST request for a HK file")
+
 	var acq Acquisition
 	if err := app.db.
 		Where("acquisition_time = ?", vars["acq_id"]).
@@ -381,97 +385,67 @@ func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
 		return Error{
 			err: err,
 			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
-				vars["acq_id"])}
+				vars["acq_id"]),
+		}
 	}
 
-	fitsfile, err := os.Open(acq.AsicHkFileName)
+	fileName := getFileName(&acq)
+	if fileName == "" {
+		return Error{err: nil, msg: "File not present in the acquisition"}
+	}
+
+	log.WithFields(log.Fields{
+		"filename": fileName,
+		"url":      r.URL.String(),
+	}).Info("Going to copy a FITS file over a HTTP connection")
+
+	fitsfile, err := os.Open(fileName)
 	if err != nil {
 		return Error{
 			err: err,
-			msg: fmt.Sprintf("Unable to retrieve the FITS file %q", acq.AsicHkFileName),
+			msg: fmt.Sprintf("Unable to retrieve the FITS file %q",
+				fileName),
 		}
 	}
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		return Error{
-			err: err,
-			msg: "Unable to send the FITS file",
-		}
+		return Error{err: err, msg: "Unable to send the FITS file"}
 	}
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/fits")
 	return nil
+}
+
+func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.AsicHkFileName
+	})
 }
 
 func (app *App) internHkHandler(w http.ResponseWriter, r *http.Request) error {
-	if app == nil {
-		panic("app cannot be nil")
-	}
-
-	vars := mux.Vars(r)
-	var acq Acquisition
-	if err := app.db.
-		Where("acquisition_time = ?", vars["acq_id"]).
-		First(&acq).Error; err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
-				vars["acq_id"]),
-		}
-	}
-
-	fitsfile, err := os.Open(acq.InternHkFileName)
-	if err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to retrieve the FITS file %q",
-				acq.InternHkFileName),
-		}
-	}
-	defer fitsfile.Close()
-
-	if _, err := io.Copy(w, fitsfile); err != nil {
-		return Error{err: err, msg: "Unable to send the FITS file"}
-	}
-
-	w.Header().Set("Content-Type", "application/fits")
-	return nil
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.InternHkFileName
+	})
 }
 
 func (app *App) externHkHandler(w http.ResponseWriter, r *http.Request) error {
-	if app == nil {
-		panic("app cannot be nil")
-	}
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.ExternHkFileName
+	})
+}
 
-	vars := mux.Vars(r)
-	var acq Acquisition
-	if err := app.db.
-		Where("acquisition_time = ?", vars["acq_id"]).
-		First(&acq).Error; err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
-				vars["acq_id"]),
-		}
-	}
+func (app *App) mmrHkHandler(w http.ResponseWriter, r *http.Request) error {
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.MmrHkFileName
+	})
+}
 
-	fitsfile, err := os.Open(acq.ExternHkFileName)
-	if err != nil {
-		return Error{
-			err: err,
-			msg: fmt.Sprintf("Unable to retrieve the FITS file %q",
-				acq.ExternHkFileName),
-		}
-	}
-	defer fitsfile.Close()
-
-	if _, err := io.Copy(w, fitsfile); err != nil {
-		return Error{err: err, msg: "Unable to send the FITS file"}
-	}
-
-	w.Header().Set("Content-Type", "application/fits")
-	return nil
+func (app *App) mgcHkHandler(w http.ResponseWriter, r *http.Request) error {
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.MgcHkFileName
+	})
 }
 
 func (app *App) serve() {
@@ -589,4 +563,8 @@ func (app *App) initRouter(router *mux.Router) {
 		app.handleErrWrap(app.internHkHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/externhk",
 		app.handleErrWrap(app.externHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/mmrhk",
+		app.handleErrWrap(app.mmrHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/mgchk",
+		app.handleErrWrap(app.mgcHkHandler)).Methods("GET")
 }
