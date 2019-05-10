@@ -152,7 +152,7 @@ func TestRefresh(t *testing.T) {
 
 	var count int
 	testdb.Model(&Acquisition{}).Count(&count)
-	if count != 4 {
+	if count != 5 {
 		t.Fatalf("Wrong number of acquisitions: %d", count)
 	}
 

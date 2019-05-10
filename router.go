@@ -404,6 +404,41 @@ func (app *App) asicHkHandler(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func (app *App) internHkHandler(w http.ResponseWriter, r *http.Request) error {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	vars := mux.Vars(r)
+	var acq Acquisition
+	if err := app.db.
+		Where("acquisition_time = ?", vars["acq_id"]).
+		First(&acq).Error; err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for acquisition with ID %s",
+				vars["acq_id"]),
+		}
+	}
+
+	fitsfile, err := os.Open(acq.InternHkFileName)
+	if err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to retrieve the FITS file %q",
+				acq.InternHkFileName),
+		}
+	}
+	defer fitsfile.Close()
+
+	if _, err := io.Copy(w, fitsfile); err != nil {
+		return Error{err: err, msg: "Unable to send the FITS file"}
+	}
+
+	w.Header().Set("Content-Type", "application/fits")
+	return nil
+}
+
 func (app *App) externHkHandler(w http.ResponseWriter, r *http.Request) error {
 	if app == nil {
 		panic("app cannot be nil")
@@ -550,6 +585,8 @@ func (app *App) initRouter(router *mux.Router) {
 		app.handleErrWrap(app.sumFileHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/asichk",
 		app.handleErrWrap(app.asicHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/internhk",
+		app.handleErrWrap(app.internHkHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/externhk",
 		app.handleErrWrap(app.externHkHandler)).Methods("GET")
 }

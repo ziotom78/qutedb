@@ -38,7 +38,7 @@ import (
 	"github.com/elithrar/simple-scrypt"
 	"github.com/gobuffalo/uuid"
 	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // We need SQLite3 in order for GORM to use it
 	log "github.com/sirupsen/logrus"
 )
 
@@ -87,6 +87,7 @@ type Acquisition struct {
 	RawFiles           []RawDataFile `json:"-"`
 	SumFiles           []SumDataFile `json:"-"`
 	AsicHkFileName     string        `json:"-"`
+	InternHkFileName   string        `json:"-"`
 	ExternHkFileName   string        `json:"-"`
 	CryostatHkFileName string        `json:"-"`
 }
@@ -206,6 +207,14 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 		newacq.AsicHkFileName = filename
 	}
 
+	filename, err = findOneMatchingFile(hkDir, "hk-intern-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.InternHkFileName = filename
+	}
+
 	filename, err = findOneMatchingFile(hkDir, "hk-extern-????.??.??.??????.fits")
 	if err != nil {
 		return err
@@ -213,6 +222,7 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	if filename != "" {
 		newacq.ExternHkFileName = filename
 	}
+
 	// TODO: Cryostat thermometers will need to be considered at this point,
 	// once the mask for their files is finalized
 

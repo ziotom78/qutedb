@@ -35,6 +35,7 @@ nil, depending whether the user is logged in or not. */}}
         <th>Raw files</th>
         <th>Sum files</th>
         <th>ASIC HK</th>
+        <th>Intern HK</th>
         <th>Extern HK</th>
         <th>Cryostat HK</th>
       </tr>
@@ -49,6 +50,13 @@ nil, depending whether the user is logged in or not. */}}
         <td>
           {{ if .AsicHkFileName }}
           <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk" download="{{ .AcquisitionTime }}_asic.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .InternHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/internhk" download="{{ .AcquisitionTime }}_inthk.fits">Download</a>
           {{ else }}
           None
           {{ end }}
