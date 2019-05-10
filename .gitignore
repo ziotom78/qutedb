@@ -26,3 +26,4 @@ config.json
 
 # Other files
 *~
+.vscode/
