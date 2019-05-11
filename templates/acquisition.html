@@ -1,0 +1,87 @@
+{{ define "content" }}
+
+<h2>{{ .Name }}</h2>
+
+<h3>Raw files</h3>
+
+<ul class="list-group">
+  {{ range .RawFiles }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ $.AcquisitionTime }}/rawdata/{{ .AsicNumber }}"
+       download="{{ .FileName }}">
+      ASIC {{ .AsicNumber }}
+    </a>
+  </li>
+  {{ end }}
+</ul>
+
+<h3>Scientific files</h3>
+
+<ul class="list-group">
+  {{ range .SumFiles }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ $.AcquisitionTime }}/sumdata/{{ .AsicNumber }}"
+       download="{{ .FileName }}">
+      ASIC {{ .AsicNumber }}
+    </a>
+  </li>
+  {{ end }}
+</ul>
+
+<h3>Housekeeping files</h3>
+
+<ul class="list-group">
+  {{ if .AsicHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk"
+       download="{{ .AsicHkFileName }}">
+      ASIC Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No ASIC housekeeping file</li>
+  {{ end }}
+
+  {{ if .ExternHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk"
+       download="{{ .ExternHkFileName }}">
+      External Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No external housekeeping file</li>
+  {{ end }}
+
+  {{ if .MmrHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mmrhk"
+       download="{{ .MmrHkFileName }}">
+      MMR Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No MMR housekeeping file</li>
+  {{ end }}
+
+  {{ if .MgcHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mgchk"
+       download="{{ .MgcHkFileName }}">
+      MGC Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No MGC housekeeping file</li>
+  {{ end }}
+</ul>
+
+<h3>Additional information</h3>
+
+<ul class="list-group">
+  <li>Acquisition time: {{ .AcquisitionTime }}
+  <li>Date when the element was added to the database: {{ .CreatedAt }}
+</ul>
+
+
+{{ end }}

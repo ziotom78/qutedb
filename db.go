@@ -38,7 +38,7 @@ import (
 	"github.com/elithrar/simple-scrypt"
 	"github.com/gobuffalo/uuid"
 	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // We need SQLite3 in order for GORM to use it
 	log "github.com/sirupsen/logrus"
 )
 
@@ -83,12 +83,14 @@ type Acquisition struct {
 	Directoryname string `json:"directory_name" gorm:"unique_index"`
 	// We encode the acquisition time as a string in order to have
 	// full control on the formatting, which is always "YYYY-MM-DDThh:mm:ss"
-	AcquisitionTime    string        `json:"acquisition_time"`
-	RawFiles           []RawDataFile `json:"-"`
-	SumFiles           []SumDataFile `json:"-"`
-	AsicHkFileName     string        `json:"-"`
-	ExternHkFileName   string        `json:"-"`
-	CryostatHkFileName string        `json:"-"`
+	AcquisitionTime  string        `json:"acquisition_time"`
+	RawFiles         []RawDataFile `json:"-"`
+	SumFiles         []SumDataFile `json:"-"`
+	AsicHkFileName   string        `json:"-"`
+	InternHkFileName string        `json:"-"`
+	ExternHkFileName string        `json:"-"`
+	MmrHkFileName    string        `json:"-"`
+	MgcHkFileName    string        `json:"-"`
 }
 
 // TimeToCanonicalStr converts a standard date/time into
@@ -206,6 +208,14 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 		newacq.AsicHkFileName = filename
 	}
 
+	filename, err = findOneMatchingFile(hkDir, "hk-intern-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.InternHkFileName = filename
+	}
+
 	filename, err = findOneMatchingFile(hkDir, "hk-extern-????.??.??.??????.fits")
 	if err != nil {
 		return err
@@ -213,29 +223,62 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	if filename != "" {
 		newacq.ExternHkFileName = filename
 	}
-	// TODO: Cryostat thermometers will need to be considered at this point,
-	// once the mask for their files is finalized
+
+	filename, err = findOneMatchingFile(hkDir, "hk-MGC-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.MgcHkFileName = filename
+	}
+
+	filename, err = findOneMatchingFile(hkDir, "hk-MMR-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.MmrHkFileName = filename
+	}
 
 	asicRe := regexp.MustCompile("asic([0-9]+)")
-	if rawFiles, err := findMultipleFiles(RawDirName(folderPath), "raw-asic*-????.??.??.??????.fits"); err == nil && len(rawFiles) > 0 {
+	if rawFiles, err := findMultipleFiles(
+		RawDirName(folderPath),
+		"raw-asic*-????.??.??.??????.fits",
+	); err == nil && len(rawFiles) > 0 {
 		for _, filename := range rawFiles {
 			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
 			asicNum, err := strconv.Atoi(matches[1])
 			if err != nil {
 				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
 			}
-			newacq.RawFiles = append(newacq.RawFiles, RawDataFile{FileName: filename, AsicNumber: asicNum})
+			newacq.RawFiles = append(
+				newacq.RawFiles,
+				RawDataFile{
+					FileName:   filename,
+					AsicNumber: asicNum,
+				},
+			)
 		}
 	}
 
-	if sumFiles, err := findMultipleFiles(SumDirName(folderPath), "science-asic*-????.??.??.??????.fits"); err == nil && len(sumFiles) > 0 {
+	if sumFiles, err := findMultipleFiles(
+		SumDirName(folderPath),
+		"science-asic*-????.??.??.??????.fits",
+	); err == nil && len(sumFiles) > 0 {
 		for _, filename := range sumFiles {
 			matches := asicRe.FindStringSubmatch(filepath.Base(filename))
 			asicNum, err := strconv.Atoi(matches[1])
 			if err != nil {
-				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s", matches[1], err))
+				panic(fmt.Sprintf("Unexpected error in Atoi(\"%s\"): %s",
+					matches[1], err))
 			}
-			newacq.SumFiles = append(newacq.SumFiles, SumDataFile{FileName: filename, AsicNumber: asicNum})
+			newacq.SumFiles = append(
+				newacq.SumFiles,
+				SumDataFile{
+					FileName:   filename,
+					AsicNumber: asicNum,
+				},
+			)
 		}
 	}
 
@@ -296,7 +339,13 @@ func RefreshDbContents(db *gorm.DB, repositoryPath string) error {
 // CreateUser creates a new "User" object and initializes it with the hash of
 // the password and the other parameters as well. The new object is saved in the
 // database.
-func CreateUser(db *gorm.DB, email string, password string, superuser bool) (*User, error) {
+func CreateUser(
+	db *gorm.DB,
+	email string,
+	password string,
+	superuser bool,
+) (*User, error) {
+
 	hash, err := scrypt.GenerateFromPassword([]byte(password), scrypt.DefaultParams)
 	if err != nil {
 		return nil, err
@@ -447,4 +496,42 @@ func QuerySessionByUUID(db *gorm.DB, UUID string) (*Session, error) {
 	}
 
 	return &session, nil
+}
+
+// QueryAcquisition returns an Aquisition object with all its fields
+// properly filled
+func QueryAcquisition(db *gorm.DB, acqtime string) (*Acquisition, error) {
+	var acq Acquisition
+	if err := db.
+		Where("acquisition_time = ?", acqtime).First(&acq).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+				acqtime),
+		}
+	}
+
+	if err := db.
+		Joins("JOIN acquisitions ON raw_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.RawFiles).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for raw files belonging to ID %s",
+				acqtime),
+		}
+	}
+
+	if err := db.
+		Joins("JOIN acquisitions ON sum_data_files.acquisition_id = acquisitions.id").
+		Where("acquisitions.id = ?", acq.ID).
+		Find(&acq.SumFiles).Error; err != nil {
+		return &acq, Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query for science files belonging to ID %s",
+				acqtime),
+		}
+	}
+
+	return &acq, nil
 }

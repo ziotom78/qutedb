@@ -35,8 +35,11 @@ nil, depending whether the user is logged in or not. */}}
         <th>Raw files</th>
         <th>Sum files</th>
         <th>ASIC HK</th>
+        <th>Intern HK</th>
         <th>Extern HK</th>
-        <th>Cryostat HK</th>
+        <th>MMR HK</th>
+        <th>MGC HK</th>
+        <th>Bundle</th>
       </tr>
     </thead>
     <tbody>
@@ -44,24 +47,45 @@ nil, depending whether the user is logged in or not. */}}
       <tr>
         <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">{{ .Name }}</a></td>
         <td>{{ .AcquisitionTime }}</td>
-        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/rawdata">Link</a></td>
-        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/sumdata">Link</a></td>
+        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">Link</a></td>
+        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">Link</a></td>
         <td>
           {{ if .AsicHkFileName }}
-          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk">Link</a>
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk" download="{{ .AcquisitionTime }}_asic.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .InternHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/internhk" download="{{ .AcquisitionTime }}_inthk.fits">Download</a>
           {{ else }}
           None
           {{ end }}
         </td>
         <td>
           {{ if .ExternHkFileName }}
-          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk">Link</a>
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/externhk" download="{{ .AcquisitionTime }}_exthk.fits">Download</a>
           {{ else }}
           None
           {{ end }}
         </td>
         <td>
-          N/A
+          {{ if .MmrHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mmrhk" download="{{ .AcquisitionTime }}_mmrhk.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .MgcHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mgchk" download="{{ .AcquisitionTime }}_mgchk.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          Not implemented yet
         </td>
       </tr>
       {{ end }}
