@@ -1,3 +1,7 @@
+# HEAD
+
+- Properly handle housekeeping files ([#8](https://github.com/ziotom78/qutedb/pull/8))
+
 # 0.2.0
 
 - Force download of FITS files, instead of loading them manually
