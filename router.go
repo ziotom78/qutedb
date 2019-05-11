@@ -247,8 +247,21 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 	return generateHTML(w, acq, "layout", "private.navbar", "acquisition")
 }
 
-func addFileToArchive(nameInArchive string, filename string, ziparchive *zip.Writer) error {
-	f, err := ziparchive.Create(nameInArchive)
+func addFileToArchive(nameInArchive string, filename string, comment string, ziparchive *zip.Writer) error {
+	fileInfo, err := os.Lstat(filename)
+	if err != nil {
+		return err
+	}
+
+	fileHeader, err := zip.FileInfoHeader(fileInfo)
+	if err != nil {
+		return err
+	}
+	fileHeader.Method = zip.Deflate
+	fileHeader.Name = nameInArchive
+	fileHeader.Comment = comment
+
+	f, err := ziparchive.CreateHeader(fileHeader)
 	if err != nil {
 		return Error{
 			err: err,
@@ -275,9 +288,14 @@ func addFileToArchive(nameInArchive string, filename string, ziparchive *zip.Wri
 	return nil
 }
 
-func addFilesToArchive(filelist []string, dirname string, ziparchive *zip.Writer) error {
+func addFilesToArchive(filelist []string, dirname string, comment string, ziparchive *zip.Writer) error {
 	for _, filename := range filelist {
-		if err := addFileToArchive(dirname+"/"+path.Base(filename), filename, ziparchive); err != nil {
+		if err := addFileToArchive(
+			dirname+"/"+path.Base(filename),
+			filename,
+			comment,
+			ziparchive,
+		); err != nil {
 			return err
 		}
 	}
@@ -331,7 +349,7 @@ func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request)
 	for i := 0; i < len(acq.RawFiles); i++ {
 		filelist[i] = acq.RawFiles[i].FileName
 	}
-	if err := addFilesToArchive(filelist, "Raws", ziparchive); err != nil {
+	if err := addFilesToArchive(filelist, "Raws", "FITS file containing raw ASIC data", ziparchive); err != nil {
 		return err
 	}
 
@@ -339,36 +357,41 @@ func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request)
 	for i := 0; i < len(acq.SumFiles); i++ {
 		filelist[i] = acq.SumFiles[i].FileName
 	}
-	if err := addFilesToArchive(filelist, "Sums", ziparchive); err != nil {
+	if err := addFilesToArchive(filelist, "Sums", "FITS file containing scientific ASIC data", ziparchive); err != nil {
 		return err
 	}
 
 	if acq.AsicHkFileName != "" {
-		if err := addFileToArchive("Hks/"+path.Base(acq.AsicHkFileName), acq.AsicHkFileName, ziparchive); err != nil {
+		if err := addFileToArchive("Hks/"+path.Base(acq.AsicHkFileName), acq.AsicHkFileName,
+			"FITS file containing ASIC configuration", ziparchive); err != nil {
 			return err
 		}
 	}
 
 	if acq.InternHkFileName != "" {
-		if err := addFileToArchive("Hks/"+path.Base(acq.InternHkFileName), acq.InternHkFileName, ziparchive); err != nil {
+		if err := addFileToArchive("Hks/"+path.Base(acq.InternHkFileName), acq.InternHkFileName,
+			"FITS file containing internal housekeeping data", ziparchive); err != nil {
 			return err
 		}
 	}
 
 	if acq.ExternHkFileName != "" {
-		if err := addFileToArchive("Hks/"+path.Base(acq.ExternHkFileName), acq.ExternHkFileName, ziparchive); err != nil {
+		if err := addFileToArchive("Hks/"+path.Base(acq.ExternHkFileName), acq.ExternHkFileName,
+			"FITS file containing external housekeeping data", ziparchive); err != nil {
 			return err
 		}
 	}
 
 	if acq.MmrHkFileName != "" {
-		if err := addFileToArchive("Hks/"+path.Base(acq.MmrHkFileName), acq.MmrHkFileName, ziparchive); err != nil {
+		if err := addFileToArchive("Hks/"+path.Base(acq.MmrHkFileName), acq.MmrHkFileName,
+			"FITS file containing MMR housekeeping data", ziparchive); err != nil {
 			return err
 		}
 	}
 
 	if acq.MgcHkFileName != "" {
-		if err := addFileToArchive("Hks/"+path.Base(acq.MgcHkFileName), acq.MgcHkFileName, ziparchive); err != nil {
+		if err := addFileToArchive("Hks/"+path.Base(acq.MgcHkFileName), acq.MgcHkFileName,
+			"FITS file containing MGC housekeeping data", ziparchive); err != nil {
 			return err
 		}
 	}
