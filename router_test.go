@@ -161,13 +161,14 @@ func runTestOnHkFile(t *testing.T, url string, expectedDate string) {
 	router := mux.NewRouter()
 	app.initRouter(router)
 
-	writer := httptest.NewRecorder()
-
 	request, err := http.NewRequest("GET", url+"_doesnotexist", nil)
 	if err != nil {
 		t.Errorf("Unable to create test request: %v", err)
 	}
+
+	writer := httptest.NewRecorder()
 	router.ServeHTTP(writer, request)
+
 	if writer.Result().StatusCode != 404 {
 		t.Errorf("Response code for non-existing URL is %v instead of 404", writer.Code)
 	}
@@ -206,4 +207,34 @@ func TestInternHkFile(t *testing.T) {
 
 func TestExternHkFile(t *testing.T) {
 	runTestOnHkFile(t, "/api/v1/acquisitions/2019-05-07T18:11:29/externhk", "2019-05-07 18:11:29")
+}
+
+func TestZipArchive(t *testing.T) {
+	router := mux.NewRouter()
+	app.initRouter(router)
+
+	// This acquisition does not exist
+	request, err := http.NewRequest("GET", "/api/v1/acquisitions/2008-02-07T03:00:00/archive", nil)
+	if err != nil {
+		t.Errorf("Unable to create test request: %v", err)
+	}
+
+	writer := httptest.NewRecorder()
+	router.ServeHTTP(writer, request)
+
+	if writer.Result().StatusCode != 500 {
+		t.Errorf("Response code for non-existing URL is %v instead of 404", writer.Code)
+	}
+
+	request, err = http.NewRequest("GET", "/api/v1/acquisitions/2019-05-07T18:11:29/archive", nil)
+	if err != nil {
+		t.Errorf("Unable to create test request: %v", err)
+	}
+
+	writer = httptest.NewRecorder()
+	router.ServeHTTP(writer, request)
+
+	if writer.Result().StatusCode != 200 {
+		t.Errorf("Response code is %v instead of 200 when downloading ZIP archive", writer.Code)
+	}
 }
