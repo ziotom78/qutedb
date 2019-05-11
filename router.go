@@ -410,7 +410,10 @@ func (app *App) genericHkHandler(w http.ResponseWriter, r *http.Request, getFile
 	defer fitsfile.Close()
 
 	if _, err := io.Copy(w, fitsfile); err != nil {
-		return Error{err: err, msg: "Unable to send the FITS file"}
+		return Error{
+			err: err,
+			msg: "Unable to send the FITS file",
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
