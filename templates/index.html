@@ -32,14 +32,12 @@ nil, depending whether the user is logged in or not. */}}
       <tr>
         <th>Name</th>
         <th>Acquisition</th>
-        <th>Raw files</th>
-        <th>Sum files</th>
+        <th>ZIP archive</th>
         <th>ASIC HK</th>
         <th>Intern HK</th>
         <th>Extern HK</th>
         <th>MMR HK</th>
         <th>MGC HK</th>
-        <th>Bundle</th>
       </tr>
     </thead>
     <tbody>
@@ -47,8 +45,9 @@ nil, depending whether the user is logged in or not. */}}
       <tr>
         <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">{{ .Name }}</a></td>
         <td>{{ .AcquisitionTime }}</td>
-        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">Link</a></td>
-        <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">Link</a></td>
+        <td>
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/archive" download="{{ .AcquisitionTime }}.zip">Download</a>
+        </td>
         <td>
           {{ if .AsicHkFileName }}
           <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/asichk" download="{{ .AcquisitionTime }}_asic.fits">Download</a>
@@ -83,9 +82,6 @@ nil, depending whether the user is logged in or not. */}}
           {{ else }}
           None
           {{ end }}
-        </td>
-        <td>
-          Not implemented yet
         </td>
       </tr>
       {{ end }}
