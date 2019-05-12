@@ -25,12 +25,16 @@ THE SOFTWARE.
 package qutedb
 
 import (
+	"archive/zip"
+	"bytes"
+	"compress/flate"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"time"
 
@@ -241,6 +245,164 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 	}
 
 	return generateHTML(w, acq, "layout", "private.navbar", "acquisition")
+}
+
+func addFileToArchive(nameInArchive string, filename string, comment string, ziparchive *zip.Writer) error {
+	fileInfo, err := os.Lstat(filename)
+	if err != nil {
+		return err
+	}
+
+	fileHeader, err := zip.FileInfoHeader(fileInfo)
+	if err != nil {
+		return err
+	}
+	fileHeader.Method = zip.Deflate
+	fileHeader.Name = nameInArchive
+	fileHeader.Comment = comment
+
+	f, err := ziparchive.CreateHeader(fileHeader)
+	if err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to add file \"%s\" to ZIP archive", nameInArchive),
+		}
+	}
+
+	datafile, err := os.Open(filename)
+	if err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to retrieve FITS file \"%s\"", filename),
+		}
+	}
+	defer datafile.Close()
+
+	if _, err := io.Copy(f, datafile); err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to compress file \"%s\"", filename),
+		}
+	}
+
+	return nil
+}
+
+func addFilesToArchive(filelist []string, dirname string, comment string, ziparchive *zip.Writer) error {
+	for _, filename := range filelist {
+		if err := addFileToArchive(
+			dirname+"/"+path.Base(filename),
+			filename,
+			comment,
+			ziparchive,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request) error {
+	if app == nil {
+		panic("app cannot be nil")
+	}
+
+	log.WithFields(log.Fields{
+		"accept": r.Header.Get("Accept"),
+	}).Info("acquisitionBundleHandler")
+
+	vars := mux.Vars(r)
+	acq, err := QueryAcquisition(app.db, vars["acq_id"])
+	if err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to query the database for acquisition with ID %s",
+				vars["acq_id"]),
+		}
+	}
+
+	buf := new(bytes.Buffer)
+	ziparchive := zip.NewWriter(buf)
+
+	// We strieve for speed here, so we use the lowest possible compression
+	// level. This usually achieves good performance neverteless, so it is not a
+	// big loss
+	ziparchive.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(out, flate.BestSpeed)
+	})
+
+	// Create the directory structure within the ZIP file
+	if _, err := ziparchive.Create("Hks/"); err != nil {
+		return Error{err: err, msg: "Unable to create directory structure in ZIP file"}
+	}
+
+	if _, err := ziparchive.Create("Raws/"); err != nil {
+		return Error{err: err, msg: "Unable to create directory structure in ZIP file"}
+	}
+
+	if _, err := ziparchive.Create("Sums/"); err != nil {
+		return Error{err: err, msg: "Unable to create directory structure in ZIP file"}
+	}
+
+	filelist := make([]string, len(acq.RawFiles))
+	for i := 0; i < len(acq.RawFiles); i++ {
+		filelist[i] = acq.RawFiles[i].FileName
+	}
+	if err := addFilesToArchive(filelist, "Raws", "FITS file containing raw ASIC data", ziparchive); err != nil {
+		return err
+	}
+
+	filelist = make([]string, len(acq.SumFiles))
+	for i := 0; i < len(acq.SumFiles); i++ {
+		filelist[i] = acq.SumFiles[i].FileName
+	}
+	if err := addFilesToArchive(filelist, "Sums", "FITS file containing scientific ASIC data", ziparchive); err != nil {
+		return err
+	}
+
+	if acq.AsicHkFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.AsicHkFileName), acq.AsicHkFileName,
+			"FITS file containing ASIC configuration", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if acq.InternHkFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.InternHkFileName), acq.InternHkFileName,
+			"FITS file containing internal housekeeping data", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if acq.ExternHkFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.ExternHkFileName), acq.ExternHkFileName,
+			"FITS file containing external housekeeping data", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if acq.MmrHkFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.MmrHkFileName), acq.MmrHkFileName,
+			"FITS file containing MMR housekeeping data", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if acq.MgcHkFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.MgcHkFileName), acq.MgcHkFileName,
+			"FITS file containing MGC housekeeping data", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if err := ziparchive.Close(); err != nil {
+		return err
+	}
+
+	w.Write(buf.Bytes())
+	w.Header().Set("Content-Type", "application/zip")
+	return nil
 }
 
 func (app *App) rawListHandler(w http.ResponseWriter, r *http.Request) error {
@@ -552,6 +714,8 @@ func (app *App) initRouter(router *mux.Router) {
 		app.handleErrWrap(app.acquisitionListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}",
 		app.handleErrWrap(app.acquisitionHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/archive",
+		app.handleErrWrap(app.acquisitionBundleHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/rawdata",
 		app.handleErrWrap(app.rawListHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/rawdata/{asic_num:[0-9]+}",
