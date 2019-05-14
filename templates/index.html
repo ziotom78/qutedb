@@ -17,19 +17,96 @@ nil, depending whether the user is logged in or not. */}}
 
 {{ if . }}
   <h2>List of tests</h2>
+
   {{ if .AcquisitionList }}
+  <script>
+    $(function () {
+      var $acquisitionTable = $('#acquisitionTable')
+      var $acquisitionListCode = $('#acquisitionListCode')
+      
+      var $outputPython = $('#outputPython')[0]
+      var $outputJson = $('#outputJson')[0]
+
+      var checkedRows = []
+      console.log("outputPython: ", $outputPython)
+
+      toJson = function() {
+        var snippet = "[\n";
+        var num = 0;
+
+        $.each(checkedRows, function(index, value) {
+          if (num > 0) {
+            snippet = snippet + ",\n";
+          }
+          snippet = snippet + '    "' + value.id + '"';
+          num = num + 1;
+        })
+
+        if(checkedRows.length > 0) {
+          snippet = snippet + "\n";
+        }
+
+        snippet = snippet + "]";
+        return snippet;
+      }
+
+      toPython = function() {
+        return  "from qutepy import download\n\n# Substitute LOCAL_PATH with the directory where you want to download the files\ndownload(\"LOCAL_PATH\", " + toJson() + ")";
+      }
+
+      updateCodeSnippet = function() {
+        console.log("Tic!")
+        console.log($outputPython.checked)
+        if($outputPython.checked == true) {
+          $acquisitionListCode.val(toPython())
+        } else {
+          $acquisitionListCode.val(toJson())
+        }
+      }
+
+      $acquisitionTable.on('check.bs.table', function (row, element) {
+        checkedRows.push({id: element[2]});
+        updateCodeSnippet();
+      })
+
+      $acquisitionTable.on('uncheck.bs.table', function (row, element) {
+        $.each(checkedRows, function(index, value) {
+          if (value.id === element[2]) {
+            checkedRows.splice(index, 1);
+          }
+        });
+        updateCodeSnippet();
+      })
+
+      $acquisitionTable.on('uncheck-all.bs.table', function() {
+        checkedRows = [];
+        updateCodeSnippet();
+      })
+    })
+  </script>
+
+  <div id="toolbar">
+      <p id="testText">Hello</p>
+      <button onclick="$('#acquisitionTable').bootstrapTable('uncheckAll', undefined)">Uncheck all</button>
+  </div>
+
   <table
+    id="acquisitionTable"
     class="table table-bordered table-hover"
     data-toggle="table"
+    data-checkbox-header="false"
+    data-maintain-selected="true"
     data-page-size="25"
     data-pagination="true"
     data-search="true"
     data-show-columns="true"
     data-show-toggle="true"
     data-sortable="true"
+    data-toolbar="#toolbar"
     data-toggle="table">
     <thead>
       <tr>
+        <th data-checkbox="true"></th>
         <th>Name</th>
         <th>Acquisition</th>
         <th>ZIP archive</th>
@@ -43,6 +120,7 @@ nil, depending whether the user is logged in or not. */}}
     <tbody>
       {{ range .AcquisitionList }}
       <tr>
+        <td></td>
         <td><a href="/api/v1/acquisitions/{{ .AcquisitionTime }}">{{ .Name }}</a></td>
         <td>{{ .AcquisitionTime }}</td>
         <td>
@@ -87,6 +165,46 @@ nil, depending whether the user is logged in or not. */}}
       {{ end }}
     </tbody>
   </table>
+
+  <div id="codeSnippet">
+    <h2>Download multiple acquisitions</h2>
+    <form>
+      <div class="row">
+        <div class="col">
+          <div class="form-check">
+            <input 
+              type="radio"
+              class="form-check-input"
+              name="radSize"
+              id="outputPython"
+              value="python"
+              checked="true"
+              onclick="updateCodeSnippet()"
+            />
+            <label class="form-check-label" for="outputPython">
+              Python (using <a src="https://github.com/ziotom78/qutepy">Qutepy</a>)
+            </label>
+
+            <input 
+              type="radio"
+              class="form-check-input"
+              name="radSize"
+              id="outputJson"
+              value="json"
+              onclick="updateCodeSnippet()"
+            />
+            <label  class="form-check-label" for="outputJson">
+              JSON
+            </label>
+          </div>
+        </div>
+
+        <div class="col">
+          <textarea id="acquisitionListCode" class="form-control-plaintext" readonly cols="80" rows="6"></textarea>
+        </div>
+      </div>
+    </form>
+  </div>
   {{ else }}
   <p>
     None found!

@@ -36,6 +36,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -232,19 +233,21 @@ func (app *App) acquisitionHandler(w http.ResponseWriter, r *http.Request) error
 		}
 	}
 
-	if r.Header.Get("Accept") == "application/json" {
-		data, err := json.Marshal(acq)
-		if err != nil {
-			return Error{err: err, msg: "Unable to encode the acquisition"}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-
-		return nil
+	// If the requester wants an HTML page, satisfy it!
+	if strings.Contains(r.Header.Get("Accept"), "text/html") {
+		return generateHTML(w, acq, "layout", "private.navbar", "acquisition")
 	}
 
-	return generateHTML(w, acq, "layout", "private.navbar", "acquisition")
+	// Otherwise, just return a JSON record
+	data, err := json.Marshal(acq)
+	if err != nil {
+		return Error{err: err, msg: "Unable to encode the acquisition"}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+
+	return nil
 }
 
 func addFileToArchive(nameInArchive string, filename string, comment string, ziparchive *zip.Writer) error {
