@@ -2,6 +2,7 @@
 
 - Properly handle housekeeping files ([#8](https://github.com/ziotom78/qutedb/pull/8))
 - Allow the user to download ZIP files ([#9](https://github.com/ziotom78/qutedb/pull/9))
+- Generate Python code for [qutepy](https://github.com/ziotom78/qutepy) ([#10](https://github.com/ziotom78/qutedb/pull/10))
 
 # 0.2.0
 
