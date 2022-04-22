@@ -7,5 +7,6 @@
 - `/api/v1/acquisitions/NN/sumdata` returns a list (in JSON format) describing all the FITS file containing the scientific data for the given acquisition
 - `/api/v1/acquisitions/NN/sumdata/MM` returns the MM-th FITS file containing scientific data for ASIC MM
 - `/api/v1/acquisitions/NN/asichk` returns the FITS file containing ASIC housekeeping values
+- `/api/v1/acquisitions/NN/internhk` returns the FITS file containing internal housekeeping values
 - `/api/v1/acquisitions/NN/externhk` returns the FITS file containing extern housekeeping values
 - `/api/v1/acquisitions/NN/cryostathk` returns the FITS file containing cryostat housekeeping values
