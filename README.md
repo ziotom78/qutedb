@@ -7,9 +7,9 @@
 
 ## Requirements
 
-- [Go](https://golang.org) version 1.10 or newer
+- [Go](https://golang.org) version 1.16 or newer
 
-Moreover, the following Go libraries should be installed using `go get`:
+The program depends on the following libraries:
 
 - [Fitsio](https://github.com/astrogo/fitsio), to read and write FITS files
 - [go-chart](https://github.com/wcharczuk/go-chart), to produce charts
@@ -28,10 +28,11 @@ first (e.g., using the [scoop](https://scoop.sh/) package manager).
 
 ## Installation
 
-To build and install the package in your `$GOPATH/bin` directory,
-install all the dependencies and run this command:
+To download all the dependencies, build, and install the package in your
+`$GOPATH/bin` directory, run this command:
 
-    go install ./...
+    go install cmd/createqdbcfg/createqdbcfg.go
+    go install cmd/qutedb/qutedb.go
     
 This will add the two executables `qutedb` and `createqdbcfg` in the
 `bin` directory of the `$GOPATH` folder.
