@@ -1,4 +1,4 @@
-module ziotom78/qutedb
+module github.com/ziotom78/qutedb
 
 go 1.18
 
@@ -12,12 +12,10 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.11.0
-	github.com/ziotom78/qutedb v0.3.0
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/gobuffalo/uuid v2.0.5+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
