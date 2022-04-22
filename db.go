@@ -36,7 +36,7 @@ import (
 	"time"
 
 	"github.com/elithrar/simple-scrypt"
-	"github.com/gobuffalo/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3" // We need SQLite3 in order for GORM to use it
 	log "github.com/sirupsen/logrus"

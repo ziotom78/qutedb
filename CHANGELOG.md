@@ -1,5 +1,7 @@
 # HEAD
 
+- Upgrade broken dependencies and support Go modules ([#15](https://github.com/ziotom78/qutedb/pull/15))
+
 # 0.3.0
 
 - Allow the user to download ZIP files ([#9](https://github.com/ziotom78/qutedb/pull/9))
