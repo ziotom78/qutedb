@@ -1,5 +1,7 @@
 # HEAD
 
+# 0.4.0
+
 - Upgrade broken dependencies and support Go modules ([#15](https://github.com/ziotom78/qutedb/pull/15))
 
 # 0.3.0
