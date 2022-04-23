@@ -1,5 +1,7 @@
 # HEAD
 
+- Be more tolerant when multiple files match a mask ([#17](https://github.com/ziotom78/qutedb/pull/17))
+
 # 0.4.0
 
 - Upgrade broken dependencies and support Go modules ([#15](https://github.com/ziotom78/qutedb/pull/15))

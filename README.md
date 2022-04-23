@@ -31,8 +31,8 @@ first (e.g., using the [scoop](https://scoop.sh/) package manager).
 To download all the dependencies, build, and install the package in your
 `$GOPATH/bin` directory, run this command:
 
-    go install cmd/createqdbcfg/createqdbcfg.go
-    go install cmd/qutedb/qutedb.go
+    go build ./...
+    go install ./...
     
 This will add the two executables `qutedb` and `createqdbcfg` in the
 `bin` directory of the `$GOPATH` folder.
