@@ -1,5 +1,7 @@
 # HEAD
 
+# 0.4.1
+
 - Be more tolerant when multiple files match a mask ([#17](https://github.com/ziotom78/qutedb/pull/17))
 
 # 0.4.0
