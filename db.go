@@ -35,7 +35,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elithrar/simple-scrypt"
+	scrypt "github.com/elithrar/simple-scrypt"
 	"github.com/gofrs/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3" // We need SQLite3 in order for GORM to use it
@@ -158,10 +158,11 @@ func findMultipleFiles(path string, mask string) ([]string, error) {
 	return result, nil
 }
 
-// findOneMatchingFile looks for the files matching "mask" (a file name pattern
-// built using POSIX wildcards). If no matches are found, it returns "". If one
-// match is found, it returns the name of the file. If more tha one match is
-// found, it returns an error. matching files were found.
+// findOneMatchingFile looks for the files matching "mask" (a file
+// name pattern built using POSIX wildcards). If no matches are found,
+// it returns "". If one match is found, it returns the name of the
+// file. If more tha one match is found, it raises a warning and
+// returns the last file (in lexicographical order).
 func findOneMatchingFile(path string, mask string) (string, error) {
 	filenames, err := findMultipleFiles(path, mask)
 	if err != nil || len(filenames) == 0 {
@@ -169,11 +170,15 @@ func findOneMatchingFile(path string, mask string) (string, error) {
 	}
 
 	if len(filenames) > 1 {
-		return "", fmt.Errorf("Found more than one file (%d) matching the mask \"%s\"",
-			len(filenames), mask)
+		log.WithFields(log.Fields{
+			"path":           path,
+			"mask":           mask,
+			"filenames":      filenames,
+			"num_of_matches": len(filenames),
+		}).Warning("Found more than one file matching the mask")
 	}
 
-	return filenames[0], nil
+	return filenames[len(filenames)-1], nil
 }
 
 // refreshFolder scans a folder containing *one* acquisition and updates the
