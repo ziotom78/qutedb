@@ -115,6 +115,8 @@ nil, depending whether the user is logged in or not. */}}
         <th>Extern HK</th>
         <th>MMR HK</th>
         <th>MGC HK</th>
+        <th>Calib conf</th>
+        <th>Calib data</th>
       </tr>
     </thead>
     <tbody>
@@ -157,6 +159,20 @@ nil, depending whether the user is logged in or not. */}}
         <td>
           {{ if .MgcHkFileName }}
           <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/mgchk" download="{{ .AcquisitionTime }}_mgchk.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .CalConfHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/calconf" download="{{ .AcquisitionTime }}_calconf.fits">Download</a>
+          {{ else }}
+          None
+          {{ end }}
+        </td>
+        <td>
+          {{ if .CalDataHkFileName }}
+          <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/caldata" download="{{ .AcquisitionTime }}_caldata.fits">Download</a>
           {{ else }}
           None
           {{ end }}

@@ -78,6 +78,29 @@
   {{ else }}
   <li>No MGC housekeeping file</li>
   {{ end }}
+
+  {{ if .CalConfHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/calconf"
+       download="{{ .CalConfHkFileName }}">
+      Calibrator Configuration Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No calibrator configuration file</li>
+  {{ end }}
+
+
+  {{ if .CalDataHkFileName }}
+  <li>
+    <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/caldata"
+       download="{{ .CalDataHkFileName }}">
+      Calibrator Data Housekeeping
+    </a>
+  </li>
+  {{ else }}
+  <li>No calibrator data file</li>
+  {{ end }}
 </ul>
 
 <h3>Additional information</h3>
