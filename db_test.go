@@ -3,7 +3,6 @@ package qutedb
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -295,29 +294,6 @@ func TestRefresh(t *testing.T) {
 
 func touch(name string) error {
 	return ioutil.WriteFile(name, nil, 0644)
-}
-
-func TestErrorsOnRefresh(t *testing.T) {
-	repopath := filepath.Join("testdata", "testerrors")
-	hkpath := filepath.Join(repopath, "2018-06-08_13.28.00__duplicate", "Hks")
-	spuriousHkFilename1 := filepath.Join(hkpath, "hk-extern-2018.06.01.000000.fits")
-	spuriousHkFilename2 := filepath.Join(hkpath, "hk-extern-2018.06.02.000000.fits")
-
-	_ = os.RemoveAll(repopath)
-	os.MkdirAll(hkpath, 0777)
-	defer os.RemoveAll(repopath)
-
-	if err := touch(spuriousHkFilename1); err != nil {
-		t.Fatalf("Unable to create file \"%s\"", spuriousHkFilename1)
-	}
-
-	if err := touch(spuriousHkFilename2); err != nil {
-		t.Fatalf("Unable to create file \"%s\"", spuriousHkFilename2)
-	}
-
-	if err := RefreshDbContents(testdb, repopath); err == nil {
-		t.Fatal("RefreshDbContents did not signal the presence of more than an HK file")
-	}
 }
 
 var app *App
