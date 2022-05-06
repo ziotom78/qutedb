@@ -146,6 +146,7 @@ type ExpectedDir struct {
 	ExternHkPresent bool
 	MmrHkPresent    bool
 	MgcHkPresent    bool
+	CalibPresent    bool
 }
 
 func TestRefresh(t *testing.T) {
@@ -155,7 +156,7 @@ func TestRefresh(t *testing.T) {
 
 	var count int
 	testdb.Model(&Acquisition{}).Count(&count)
-	if count != 5 {
+	if count != 6 {
 		t.Fatalf("Wrong number of acquisitions: %d", count)
 	}
 
@@ -167,6 +168,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   1,
 			NumOfSumFiles:   1,
 			AsicsHkPresent:  true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "mytest",
@@ -175,6 +177,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "test_backhome",
@@ -183,6 +186,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "test_withGPS",
@@ -191,6 +195,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "RF_switch_cont_13_34",
@@ -202,6 +207,19 @@ func TestRefresh(t *testing.T) {
 			ExternHkPresent: true,
 			MmrHkPresent:    true,
 			MgcHkPresent:    true,
+			CalibPresent:    false,
+		},
+		{
+			Name:            "Test-CalibrationSource-Timeconstant",
+			DirName:         "2022-04-05_15.54.04__Test-CalibrationSource-Timeconstant",
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2022, 4, 5, 15, 54, 4, 0, time.UTC)),
+			NumOfRawFiles:   2,
+			NumOfSumFiles:   2,
+			InternHkPresent: false,
+			ExternHkPresent: false,
+			MmrHkPresent:    false,
+			MgcHkPresent:    false,
+			CalibPresent:    true,
 		},
 	}
 	for _, dir := range expecteddirs {
@@ -267,6 +285,10 @@ func TestRefresh(t *testing.T) {
 
 		if dir.MgcHkPresent && acq.MgcHkFileName == "" {
 			t.Fatalf("MGC HK file for \"%s\" not found", dir.Name)
+		}
+
+		if dir.CalibPresent && (acq.CalDataFileName == "" || acq.CalConfFileName == "") {
+			t.Fatalf("Calibration HK files for \"%s\" not found", dir.Name)
 		}
 	}
 }
