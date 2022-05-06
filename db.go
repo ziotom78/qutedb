@@ -91,6 +91,8 @@ type Acquisition struct {
 	ExternHkFileName string        `json:"-"`
 	MmrHkFileName    string        `json:"-"`
 	MgcHkFileName    string        `json:"-"`
+	CalConfFileName  string        `json:"-"`
+	CalDataFileName  string        `json:"-"`
 }
 
 // TimeToCanonicalStr converts a standard date/time into
@@ -243,6 +245,22 @@ func refreshFolder(db *gorm.DB, folderPath string) error {
 	}
 	if filename != "" {
 		newacq.MmrHkFileName = filename
+	}
+
+	filename, err = findOneMatchingFile(hkDir, "calibConf-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.CalConfFileName = filename
+	}
+
+	filename, err = findOneMatchingFile(hkDir, "calibData-????.??.??.??????.fits")
+	if err != nil {
+		return err
+	}
+	if filename != "" {
+		newacq.CalDataFileName = filename
 	}
 
 	asicRe := regexp.MustCompile("asic([0-9]+)")

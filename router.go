@@ -399,6 +399,20 @@ func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+	if acq.CalDataFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.CalDataFileName), acq.CalDataFileName,
+			"FITS file containing calibrator data", ziparchive); err != nil {
+			return err
+		}
+	}
+
+	if acq.CalConfFileName != "" {
+		if err := addFileToArchive("Hks/"+path.Base(acq.CalConfFileName), acq.CalConfFileName,
+			"FITS file containing the configuration of the calibrator", ziparchive); err != nil {
+			return err
+		}
+	}
+
 	if err := ziparchive.Close(); err != nil {
 		return err
 	}
@@ -616,6 +630,18 @@ func (app *App) mgcHkHandler(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
+func (app *App) calDataHkHandler(w http.ResponseWriter, r *http.Request) error {
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.CalDataFileName
+	})
+}
+
+func (app *App) calConfHkHandler(w http.ResponseWriter, r *http.Request) error {
+	return app.genericHkHandler(w, r, func(acq *Acquisition) string {
+		return acq.CalConfFileName
+	})
+}
+
 func (app *App) serve() {
 	router := mux.NewRouter()
 
@@ -737,4 +763,8 @@ func (app *App) initRouter(router *mux.Router) {
 		app.handleErrWrap(app.mmrHkHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/mgchk",
 		app.handleErrWrap(app.mgcHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/calconf",
+		app.handleErrWrap(app.calDataHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/caldata",
+		app.handleErrWrap(app.calConfHkHandler)).Methods("GET")
 }

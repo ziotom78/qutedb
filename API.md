@@ -10,3 +10,6 @@
 - `/api/v1/acquisitions/NN/internhk` returns the FITS file containing internal housekeeping values
 - `/api/v1/acquisitions/NN/externhk` returns the FITS file containing extern housekeeping values
 - `/api/v1/acquisitions/NN/cryostathk` returns the FITS file containing cryostat housekeeping values
+- `/api/v1/acquisitions/NN/calconf` returns the FITS file containing the configuration of the calibrator
+- `/api/v1/acquisitions/NN/caldata` returns the FITS file containing the calibrator data
+

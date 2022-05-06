@@ -29,7 +29,7 @@ func TestHandleAcquisitionList(t *testing.T) {
 		t.Errorf("Unable to interpret JSON properly (%s): %s", err, string(writer.Body.Bytes()))
 	}
 
-	if len(acq) != 5 {
+	if len(acq) != 6 {
 		t.Errorf("Wrong number of acquisitions returned by JSON API: %d", len(acq))
 	}
 }
@@ -207,6 +207,14 @@ func TestInternHkFile(t *testing.T) {
 
 func TestExternHkFile(t *testing.T) {
 	runTestOnHkFile(t, "/api/v1/acquisitions/2019-05-07T18:11:29/externhk", "2019-05-07 18:11:29")
+}
+
+func TestCalDataHkFile(t *testing.T) {
+	runTestOnHkFile(t, "/api/v1/acquisitions/2022-04-05T15:54:04/caldata", "2022-04-05 15:54:04")
+}
+
+func TestCalConfHkFile(t *testing.T) {
+	runTestOnHkFile(t, "/api/v1/acquisitions/2022-04-05T15:54:04/calconf", "2022-04-05 15:54:04")
 }
 
 func TestZipArchive(t *testing.T) {

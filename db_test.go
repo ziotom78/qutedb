@@ -3,7 +3,6 @@ package qutedb
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -146,6 +145,7 @@ type ExpectedDir struct {
 	ExternHkPresent bool
 	MmrHkPresent    bool
 	MgcHkPresent    bool
+	CalibPresent    bool
 }
 
 func TestRefresh(t *testing.T) {
@@ -155,7 +155,7 @@ func TestRefresh(t *testing.T) {
 
 	var count int
 	testdb.Model(&Acquisition{}).Count(&count)
-	if count != 5 {
+	if count != 6 {
 		t.Fatalf("Wrong number of acquisitions: %d", count)
 	}
 
@@ -167,6 +167,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   1,
 			NumOfSumFiles:   1,
 			AsicsHkPresent:  true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "mytest",
@@ -175,6 +176,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "test_backhome",
@@ -183,6 +185,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "test_withGPS",
@@ -191,6 +194,7 @@ func TestRefresh(t *testing.T) {
 			NumOfRawFiles:   0,
 			NumOfSumFiles:   0,
 			ExternHkPresent: true,
+			CalibPresent:    false,
 		},
 		{
 			Name:            "RF_switch_cont_13_34",
@@ -202,6 +206,19 @@ func TestRefresh(t *testing.T) {
 			ExternHkPresent: true,
 			MmrHkPresent:    true,
 			MgcHkPresent:    true,
+			CalibPresent:    false,
+		},
+		{
+			Name:            "Test-CalibrationSource-Timeconstant",
+			DirName:         "2022-04-05_15.54.04__Test-CalibrationSource-Timeconstant",
+			AcquisitionTime: TimeToCanonicalStr(time.Date(2022, 4, 5, 15, 54, 4, 0, time.UTC)),
+			NumOfRawFiles:   2,
+			NumOfSumFiles:   2,
+			InternHkPresent: false,
+			ExternHkPresent: false,
+			MmrHkPresent:    false,
+			MgcHkPresent:    false,
+			CalibPresent:    true,
 		},
 	}
 	for _, dir := range expecteddirs {
@@ -268,34 +285,15 @@ func TestRefresh(t *testing.T) {
 		if dir.MgcHkPresent && acq.MgcHkFileName == "" {
 			t.Fatalf("MGC HK file for \"%s\" not found", dir.Name)
 		}
+
+		if dir.CalibPresent && (acq.CalDataFileName == "" || acq.CalConfFileName == "") {
+			t.Fatalf("Calibration HK files for \"%s\" not found", dir.Name)
+		}
 	}
 }
 
 func touch(name string) error {
 	return ioutil.WriteFile(name, nil, 0644)
-}
-
-func TestErrorsOnRefresh(t *testing.T) {
-	repopath := filepath.Join("testdata", "testerrors")
-	hkpath := filepath.Join(repopath, "2018-06-08_13.28.00__duplicate", "Hks")
-	spuriousHkFilename1 := filepath.Join(hkpath, "hk-extern-2018.06.01.000000.fits")
-	spuriousHkFilename2 := filepath.Join(hkpath, "hk-extern-2018.06.02.000000.fits")
-
-	_ = os.RemoveAll(repopath)
-	os.MkdirAll(hkpath, 0777)
-	defer os.RemoveAll(repopath)
-
-	if err := touch(spuriousHkFilename1); err != nil {
-		t.Fatalf("Unable to create file \"%s\"", spuriousHkFilename1)
-	}
-
-	if err := touch(spuriousHkFilename2); err != nil {
-		t.Fatalf("Unable to create file \"%s\"", spuriousHkFilename2)
-	}
-
-	if err := RefreshDbContents(testdb, repopath); err == nil {
-		t.Fatal("RefreshDbContents did not signal the presence of more than an HK file")
-	}
 }
 
 var app *App
