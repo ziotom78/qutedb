@@ -1,5 +1,9 @@
 # HEAD
 
+# 0.5.1
+
+- Fix issue [#20](https://github.com/ziotom78/qutedb/pull/20) ([#21](https://github.com/ziotom78/qutedb/pull/21))
+
 - Add two columns for calibrator files in the index and acquisition pages ([#19](https://github.com/ziotom78/qutedb/pull/19))
 
 # 0.5.0
