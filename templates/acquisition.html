@@ -82,8 +82,8 @@
   {{ if .CalConfHkFileName }}
   <li>
     <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/calconf"
-       download="{{ .CalConfHkFileName }}">
-      Calibrator Configuration Housekeeping
+       download="{{ .CalConfFileName }}">
+      Calibrator configuration
     </a>
   </li>
   {{ else }}
@@ -94,8 +94,8 @@
   {{ if .CalDataHkFileName }}
   <li>
     <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/caldata"
-       download="{{ .CalDataHkFileName }}">
-      Calibrator Data Housekeeping
+       download="{{ .CalDataFileName }}">
+      Calibrator Data
     </a>
   </li>
   {{ else }}
