@@ -764,7 +764,7 @@ func (app *App) initRouter(router *mux.Router) {
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/mgchk",
 		app.handleErrWrap(app.mgcHkHandler)).Methods("GET")
 	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/calconf",
-		app.handleErrWrap(app.calDataHkHandler)).Methods("GET")
-	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/caldata",
 		app.handleErrWrap(app.calConfHkHandler)).Methods("GET")
+	router.HandleFunc("/api/v1/acquisitions/{acq_id:[-:T0-9]+}/caldata",
+		app.handleErrWrap(app.calDataHkHandler)).Methods("GET")
 }
