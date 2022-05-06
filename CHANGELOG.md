@@ -1,5 +1,7 @@
 # HEAD
 
+# 0.5.0
+
 - Include calibration configuration and data files in the database ([#18](https://github.com/ziotom78/qutedb/pull/18))
 
 # 0.4.1
