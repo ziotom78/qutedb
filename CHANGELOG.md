@@ -1,5 +1,9 @@
 # HEAD
 
+# 0.5.2
+
+- Use a sounder way to build and send ZIP files through HTTP [#22](https//github.com/ziotom78/qutedb/pull/22)
+
 # 0.5.1
 
 - Fix issue [#20](https://github.com/ziotom78/qutedb/pull/20) ([#21](https://github.com/ziotom78/qutedb/pull/21))
