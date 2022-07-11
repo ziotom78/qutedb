@@ -26,7 +26,6 @@ package qutedb
 
 import (
 	"archive/zip"
-	"bytes"
 	"compress/flate"
 	"encoding/json"
 	"fmt"
@@ -325,11 +324,21 @@ func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	buf := new(bytes.Buffer)
-	ziparchive := zip.NewWriter(buf)
+	zipFile, err := os.CreateTemp("", "qutedb")
+	if err != nil {
+		return Error{
+			err: err,
+			msg: fmt.Sprintf("Unable to create a temporary Zip file for acquisition with ID %s",
+				vars["acq_id"]),
+		}
+	}
 
-	// We strieve for speed here, so we use the lowest possible compression
-	// level. This usually achieves good performance neverteless, so it is not a
+	defer os.Remove(zipFile.Name())
+
+	ziparchive := zip.NewWriter(zipFile)
+
+	// We strive for speed here, so we use the lowest possible compression
+	// level. This usually achieves good performance nevertheless, so it is not a
 	// big loss
 	ziparchive.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
 		return flate.NewWriter(out, flate.BestSpeed)
@@ -417,8 +426,10 @@ func (app *App) acquisitionBundleHandler(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	w.Write(buf.Bytes())
-	w.Header().Set("Content-Type", "application/zip")
+	zipFileName := zipFile.Name()
+	zipFile.Close()
+
+	http.ServeFile(w, r, zipFileName)
 	return nil
 }
 
