@@ -79,7 +79,7 @@
   <li>No MGC housekeeping file</li>
   {{ end }}
 
-  {{ if .CalConfHkFileName }}
+  {{ if .CalConfFileName }}
   <li>
     <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/calconf"
        download="{{ .CalConfFileName }}">
@@ -91,11 +91,11 @@
   {{ end }}
 
 
-  {{ if .CalDataHkFileName }}
+  {{ if .CalDataFileName }}
   <li>
     <a href="/api/v1/acquisitions/{{ .AcquisitionTime }}/caldata"
        download="{{ .CalDataFileName }}">
-      Calibrator Data
+      Calibrator data
     </a>
   </li>
   {{ else }}
