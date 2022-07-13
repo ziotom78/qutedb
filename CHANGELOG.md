@@ -1,5 +1,9 @@
 # HEAD
 
+# 0.5.3
+
+- Fix a typo in the "Acqusition" page [#23](https//github.com/ziotom78/qutedb/pull/23)
+
 # 0.5.2
 
 - Use a sounder way to build and send ZIP files through HTTP [#22](https//github.com/ziotom78/qutedb/pull/22)
